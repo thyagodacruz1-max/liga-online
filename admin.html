@@ -250,6 +250,10 @@ window.lancarResultado = async function(){
 // ===============================
 window.encerrarTemporada = async function(){
 // 🔥 Definir número da temporada
+  if(!confirm("Tem certeza que deseja encerrar a temporada?")){
+  return;
+}
+
 const numeroTemporada = Date.now();
 
   const snapshot = await getDocs(collection(db, "jogadores"));
@@ -270,6 +274,11 @@ const numeroTemporada = Date.now();
   serieA.sort((a,b)=> b.pontos - a.pontos);
   serieB.sort((a,b)=> b.pontos - a.pontos);
   serieC.sort((a,b)=> b.pontos - a.pontos);
+  if(serieA.length === 0){
+  alert("Nenhum jogador na Série A");
+  return;
+}
+
 // 🔥 Campeão da Série A
 const campeao = serieA[0];
 
