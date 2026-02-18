@@ -72,6 +72,14 @@ input,select{
   <button onclick="premiarTemporada()">Premiar Top 3</button>
 </div>
 
+<!-- ENCERRAR TEMPORADA -->
+<div class="section">
+  <h2>🏁 Encerrar Temporada</h2>
+  <button onclick="encerrarTemporada()">
+    Encerrar Temporada Completa
+  </button>
+</div>
+
 <!-- ADMIN PRODUTOS -->
 <div class="section">
   <h2>🛠️ Gerenciar Produtos (Admin)</h2>
@@ -206,6 +214,58 @@ window.premiarTemporada = async function(){
   alert("🏆 Premiação aplicada com sucesso!");
 };
 
+/* ================= ENCERRAR TEMPORADA ================= */
+
+window.encerrarTemporada = async function(){
+
+  if(jogadores.length < 3){
+    alert("Precisa de pelo menos 3 jogadores.");
+    return;
+  }
+
+  if(!confirm("Tem certeza que deseja encerrar a temporada?")){
+    return;
+  }
+
+  jogadores.sort((a,b)=>{
+    if((b.pontos || 0) !== (a.pontos || 0))
+      return (b.pontos || 0) - (a.pontos || 0);
+    return (b.elo || 1000) - (a.elo || 1000);
+  });
+
+  const premios = [100, 50, 25];
+  const campeao = jogadores[0];
+
+  await addDoc(collection(db,"campeoes"),{
+    nome: campeao.nome,
+    pontos: campeao.pontos || 0,
+    elo: campeao.elo || 1000,
+    data: new Date()
+  });
+
+  for(let i=0;i<3;i++){
+    const jogador = jogadores[i];
+    const novoSaldo = (jogador.moedas || 0) + premios[i];
+
+    await updateDoc(doc(db,"jogadores",jogador.id),{
+      moedas: novoSaldo
+    });
+  }
+
+  for(let jogador of jogadores){
+    await updateDoc(doc(db,"jogadores",jogador.id),{
+      pontos: 0,
+      golsPro: 0,
+      golsContra: 0,
+      vitorias: 0,
+      empates: 0,
+      derrotas: 0
+    });
+  }
+
+  alert("🏆 Temporada encerrada com sucesso!");
+};
+
 /* ================= ADMIN PRODUTOS ================= */
 
 window.adicionarProduto = async function(){
@@ -268,7 +328,6 @@ window.comprar = async function(produtoId, preco, nomeProduto){
 
   let inventario = jogador.inventario ? [...jogador.inventario] : [];
 
-  // 🔒 Produto único
   if(inventario.includes(nomeProduto)){
     alert("Produto já comprado.");
     return;
