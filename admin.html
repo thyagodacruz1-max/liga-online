@@ -249,6 +249,8 @@ window.lancarResultado = async function(){
 // ENCERRAR TEMPORADA
 // ===============================
 window.encerrarTemporada = async function(){
+// 🔥 Definir número da temporada
+const numeroTemporada = Date.now();
 
   const snapshot = await getDocs(collection(db, "jogadores"));
 
@@ -268,6 +270,21 @@ window.encerrarTemporada = async function(){
   serieA.sort((a,b)=> b.pontos - a.pontos);
   serieB.sort((a,b)=> b.pontos - a.pontos);
   serieC.sort((a,b)=> b.pontos - a.pontos);
+// 🔥 Campeão da Série A
+const campeao = serieA[0];
+
+// 🔥 Salvar campeão no histórico com temporada
+await addDoc(collection(db,"campeoes"),{
+  nome: campeao.nome,
+  pontos: campeao.pontos,
+  temporada: numeroTemporada,
+  data: new Date().toLocaleDateString()
+});
+
+// 🔥 Atualizar títulos do campeão
+await updateDoc(doc(db,"jogadores",campeao.id),{
+  titulos: (campeao.titulos || 0) + 1
+});
 
   const rebaixadosA = serieA.slice(-2);
   const promovidosB = serieB.slice(0,2);
