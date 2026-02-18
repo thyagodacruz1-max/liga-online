@@ -2,36 +2,134 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Ranking Geral</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ranking Geral - Liga Online</title>
+
 <style>
 body{
+  margin:0;
   background:#0f0f0f;
   color:white;
-  text-align:center;
   font-family:Arial;
+  text-align:center;
+  transition:0.3s;
 }
+
+body.light{
+  background:#f4f4f4;
+  color:#111;
+}
+
+h1{
+  color:#00f2ff;
+  margin-top:20px;
+}
+
+.controls{
+  margin:15px;
+}
+
+input, select, button{
+  padding:8px;
+  margin:5px;
+  border-radius:6px;
+  border:none;
+}
+
+button{
+  cursor:pointer;
+  font-weight:bold;
+}
+
 table{
-  width:90%;
-  margin:30px auto;
+  width:95%;
+  margin:20px auto;
   border-collapse:collapse;
   background:#1c1c1c;
+  border-radius:10px;
+  overflow:hidden;
 }
+
+body.light table{
+  background:white;
+}
+
 th,td{
   padding:12px;
   border-bottom:1px solid #333;
 }
+
+body.light th, 
+body.light td{
+  border-bottom:1px solid #ddd;
+}
+
 th{
   background:#111;
   color:#00f2ff;
 }
+
+body.light th{
+  background:#ddd;
+  color:#111;
+}
+
+tr:hover{
+  background:#222;
+}
+
+body.light tr:hover{
+  background:#eee;
+}
+
+.lider{
+  background:#ffd70033;
+  font-weight:bold;
+  animation: brilho 1.5s infinite alternate;
+}
+
+@keyframes brilho{
+  from{box-shadow:0 0 5px #ffd700;}
+  to{box-shadow:0 0 25px #ffd700;}
+}
+
+.score{
+  color:#00f2ff;
+  font-weight:bold;
+}
+
+.lenda{
+  color:#ff4444;
+  font-weight:bold;
+}
+
+.sem-dados{
+  margin-top:40px;
+  font-size:18px;
+  color:#888;
+}
 </style>
 </head>
+
 <body>
 
-<h1>👑 Ranking Geral</h1>
+<h1>👑 Ranking Geral da Liga</h1>
+
+<div class="controls">
+  <input type="text" id="busca" placeholder="Buscar jogador...">
+  <select id="filtroSerie">
+    <option value="GERAL">Geral</option>
+    <option value="A">Série A</option>
+    <option value="B">Série B</option>
+    <option value="C">Série C</option>
+  </select>
+  <button onclick="alternarTema()">🌙/☀️ Tema</button>
+</div>
+
 <div id="ranking"></div>
 
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot } 
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -47,52 +145,127 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const rankingDiv = document.getElementById("ranking");
+const filtroSerie = document.getElementById("filtroSerie");
+const buscaInput = document.getElementById("busca");
+
+let todosJogadores = [];
+
+// 🔥 Salvar tema no navegador
+if(localStorage.getItem("tema") === "light"){
+  document.body.classList.add("light");
+}
 
 onSnapshot(collection(db,"jogadores"), (snapshot)=>{
 
-  let jogadores = [];
+  todosJogadores = [];
 
   snapshot.forEach(doc=>{
     const j = doc.data();
-    const score = (j.pontos || 0) + ((j.titulos || 0) * 10);
 
-    jogadores.push({
-      nome:j.nome,
-      score:score,
-      pontos:j.pontos||0,
-      titulos:j.titulos||0
+    const score = 
+      (j.pontos || 0) +
+      ((j.titulos || 0) * 10) +
+      ((j.vitorias || 0) * 2);
+
+    todosJogadores.push({
+      nome: j.nome,
+      serie: j.serie,
+      score: score,
+      pontos: j.pontos || 0,
+      titulos: j.titulos || 0,
+      vitorias: j.vitorias || 0
     });
   });
 
-  jogadores.sort((a,b)=> b.score - a.score);
+  renderRanking();
+});
+
+filtroSerie.addEventListener("change", renderRanking);
+buscaInput.addEventListener("input", renderRanking);
+
+function renderRanking(){
+
+  let jogadores = [...todosJogadores];
+
+  if(filtroSerie.value !== "GERAL"){
+    jogadores = jogadores.filter(j => j.serie === filtroSerie.value);
+  }
+
+  if(buscaInput.value){
+    jogadores = jogadores.filter(j =>
+      j.nome.toLowerCase().includes(buscaInput.value.toLowerCase())
+    );
+  }
+
+  jogadores.sort((a,b)=>{
+    if(b.score !== a.score) return b.score - a.score;
+    if(b.titulos !== a.titulos) return b.titulos - a.titulos;
+    return b.pontos - a.pontos;
+  });
+
+  if(jogadores.length === 0){
+    rankingDiv.innerHTML = `<div class="sem-dados">Nenhum jogador encontrado.</div>`;
+    return;
+  }
 
   let html = `
   <table>
-  <tr>
-  <th>#</th>
-  <th>Jogador</th>
-  <th>Pontos</th>
-  <th>Títulos</th>
-  <th>Score Geral</th>
-  </tr>
+    <tr>
+      <th>#</th>
+      <th>Jogador</th>
+      <th>Série</th>
+      <th>Pontos</th>
+      <th>Vitórias</th>
+      <th>Títulos</th>
+      <th>Score</th>
+    </tr>
   `;
 
   jogadores.forEach((j,index)=>{
+
+    let medalha = "";
+    let classe = "";
+
+    if(index === 0){
+      medalha = "🥇";
+      classe = "lider";
+    } else if(index === 1){
+      medalha = "🥈";
+    } else if(index === 2){
+      medalha = "🥉";
+    }
+
+    let badgeLenda = j.titulos >= 3 ? `<span class="lenda"> 👑 Lenda</span>` : "";
+
     html += `
-    <tr>
-      <td>${index+1}</td>
-      <td>${j.nome}</td>
-      <td>${j.pontos}</td>
-      <td>${j.titulos}</td>
-      <td>${j.score}</td>
-    </tr>
+      <tr class="${classe}">
+        <td>${medalha} ${index+1}</td>
+        <td>${j.nome}${badgeLenda}</td>
+        <td>${j.serie}</td>
+        <td>${j.pontos}</td>
+        <td>${j.vitorias}</td>
+        <td>🏆 ${j.titulos}</td>
+        <td class="score">${j.score}</td>
+      </tr>
     `;
   });
 
   html += "</table>";
+
   rankingDiv.innerHTML = html;
-});
+}
+
+// 🔥 Alternar tema e salvar
+window.alternarTema = function(){
+  document.body.classList.toggle("light");
+  localStorage.setItem(
+    "tema",
+    document.body.classList.contains("light") ? "light" : "dark"
+  );
+};
+
 </script>
 
 </body>
 </html>
+
