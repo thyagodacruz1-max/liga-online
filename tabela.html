@@ -131,7 +131,11 @@ function carregarTabela(){
     html += `
       <tr class="${classe}">
         <td>${index+1}</td>
-        <td>${j.nome}</td>
+        <td>
+  <a href="perfil.html?nome=${j.nome}" style="color:#00f2ff; text-decoration:none;">
+    ${j.nome}
+  </a>
+</td>
         <td>${j.pts}</td>
         <td>${j.gp}</td>
         <td>${j.gc}</td>
