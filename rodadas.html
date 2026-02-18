@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Histórico de Partidas</title>
+
+<style>
+body{
+  background:#0f0f0f;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+}
+h1{
+  color:#00f2ff;
+}
+.card{
+  background:#1c1c1c;
+  margin:15px auto;
+  padding:15px;
+  width:350px;
+  border-radius:10px;
+}
+.voltar{
+  display:inline-block;
+  margin:20px;
+  padding:10px;
+  background:#00f2ff;
+  color:black;
+  text-decoration:none;
+  border-radius:6px;
+}
+</style>
+</head>
+<body>
+
+<h1>📜 Histórico de Partidas</h1>
+<div id="lista"></div>
+
+<a href="index.html" class="voltar">Voltar</a>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, getDocs } 
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAgLb8XfVgjmOdyMWxdWKVOygMivU6TRM0",
+  authDomain: "liga-online-8f74d.firebaseapp.com",
+  projectId: "liga-online-8f74d",
+  appId: "1:815073531863:web:38dfaa7114fcda1b001d92"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+async function carregar(){
+
+  const snapshot = await getDocs(collection(db, "partidas"));
+
+  let html = "";
+
+  snapshot.forEach(doc=>{
+    const p = doc.data();
+
+    html += `
+      <div class="card">
+        <strong>${p.jogador1} ${p.gols1} x ${p.gols2} ${p.jogador2}</strong>
+        <br>
+        <small>${p.data}</small>
+      </div>
+    `;
+  });
+
+  document.getElementById("lista").innerHTML = html;
+}
+
+carregar();
+
+</script>
+
+</body>
+</html>
