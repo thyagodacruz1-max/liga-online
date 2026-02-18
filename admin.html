@@ -76,6 +76,7 @@ import {
   getFirestore, 
   collection, 
   getDocs,
+  getDoc,
   doc,
   updateDoc,
   deleteDoc
@@ -178,20 +179,14 @@ window.lancarResultado = async function(){
 window.aprovar = async function(id){
 
   const docRef = doc(db,"resultadosPendentes",id);
-  const snap = await getDocs(collection(db,"resultadosPendentes"));
+  const partidaSnap = await getDoc(docRef);
 
-  let partida;
-
-  snap.forEach(d=>{
-    if(d.id === id){
-      partida = d.data();
-    }
-  });
-
-  if(!partida){
+  if(!partidaSnap.exists()){
     alert("Partida não encontrada");
     return;
   }
+
+  const partida = partidaSnap.data();
 
   const jogadoresSnap = await getDocs(collection(db,"jogadores"));
 
@@ -266,3 +261,4 @@ carregarPendentes();
 
 </body>
 </html>
+
