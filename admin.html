@@ -59,17 +59,19 @@ input,select{
 </div>
 
 <div class="section">
-  <h2>🏆 Premiação da Temporada</h2>
-  <button onclick="premiarTemporada()">Premiar Top 3</button>
-</div>
-
-<div class="section">
   <h2>🏁 Encerrar Temporada</h2>
-  <button onclick="encerrarTemporada()">Encerrar Temporada Completa</button>
+  <button onclick="encerrarTemporada()">Encerrar Temporada</button>
 </div>
 
 <div class="section">
-  <h2>🛠️ Gerenciar Produtos (Admin)</h2>
+  <h2>🔄 Promoção / Rebaixamento</h2>
+  <button onclick="promoverRebaixarGeral()">
+    Aplicar Promoção e Rebaixamento
+  </button>
+</div>
+
+<div class="section">
+  <h2>🛠️ Gerenciar Produtos</h2>
   <input type="text" id="novoProdutoNome" placeholder="Nome do produto">
   <input type="number" id="novoProdutoPreco" placeholder="Preço em SnSCoin">
   <button onclick="adicionarProduto()">Adicionar Produto</button>
@@ -145,7 +147,7 @@ onSnapshot(collection(db,"produtos"), snapshot=>{
 
     htmlAdmin += `
       <div class="card">
-        ${p.nome} - 🪙 ${p.preco} SnSCoin
+        ${p.nome} - 🪙 ${p.preco}
         <button class="remover" onclick="removerProduto('${docSnap.id}')">
           Remover
         </button>
@@ -155,7 +157,7 @@ onSnapshot(collection(db,"produtos"), snapshot=>{
     htmlLoja += `
       <div class="card">
         ${p.nome}<br>
-        Preço: 🪙 ${p.preco} SnSCoin<br>
+        Preço: 🪙 ${p.preco}<br>
         <button onclick="comprar('${docSnap.id}', ${p.preco}, '${p.nome.replace(/'/g,"")}')">
           Comprar
         </button>
@@ -167,169 +169,149 @@ onSnapshot(collection(db,"produtos"), snapshot=>{
   document.getElementById("itensLoja").innerHTML = htmlLoja;
 });
 
-/* ================= PREMIAÇÃO ================= */
+/* ================= PROMOÇÃO / REBAIXAMENTO ================= */
 
-window.premiarTemporada = async function(){
+window.promoverRebaixarGeral = async function(){
 
-  if(jogadores.length < 3){
-    alert("Precisa de pelo menos 3 jogadores.");
-    return;
-  }
+  if(!confirm("Aplicar promoção e rebaixamento?")) return;
 
-  jogadores.sort((a,b)=>{
-    if((b.pontos || 0) !== (a.pontos || 0))
-      return (b.pontos || 0) - (a.pontos || 0);
-    return (b.elo || 1000) - (a.elo || 1000);
+  const ordenar = lista => lista.sort((a,b)=>{
+    if((b.pontos || 0)!==(a.pontos || 0))
+      return (b.pontos || 0)-(a.pontos || 0);
+    return (b.elo || 1000)-(a.elo || 1000);
   });
 
-  const premios = [100, 50, 25];
+  const serieA = jogadores.filter(j=>j.serie==="A");
+  const serieB = jogadores.filter(j=>j.serie==="B");
+  const serieC = jogadores.filter(j=>j.serie==="C");
 
-  for(let i=0;i<3;i++){
-    const jogador = jogadores[i];
-    await updateDoc(doc(db,"jogadores",jogador.id),{
-      moedas: (jogador.moedas || 0) + premios[i]
-    });
-  }
+  ordenar(serieA);
+  ordenar(serieB);
+  ordenar(serieC);
+if(serieA.length !== 12 || serieB.length !== 12 || serieC.length !== 12){
+  alert("Cada série precisa ter exatamente 12 jogadores.");
+  return;
+}
 
-  alert("🏆 Premiação aplicada com sucesso!");
+  const rebaixadosA=[serieA[10],serieA[11]];
+  const promovidosB=[serieB[0],serieB[1]];
+  const rebaixadosB=[serieB[10],serieB[11]];
+  const promovidosC=[serieC[0],serieC[1]];
+
+  for(let j of rebaixadosA)
+    await updateDoc(doc(db,"jogadores",j.id),{serie:"B"});
+
+  for(let j of promovidosB)
+    await updateDoc(doc(db,"jogadores",j.id),{serie:"A"});
+
+  for(let j of rebaixadosB)
+    await updateDoc(doc(db,"jogadores",j.id),{serie:"C"});
+
+  for(let j of promovidosC)
+    await updateDoc(doc(db,"jogadores",j.id),{serie:"B"});
+
+  alert("Promoção/Rebaixamento aplicado!");
 };
 
 /* ================= ENCERRAR TEMPORADA ================= */
 
 window.encerrarTemporada = async function(){
 
-  if(jogadores.length < 3){
-    alert("Precisa de pelo menos 3 jogadores.");
-    return;
-  }
-
-  if(!confirm("Tem certeza que deseja encerrar a temporada?")){
-    return;
-  }
+  if(!confirm("Encerrar temporada?")) return;
 
   jogadores.sort((a,b)=>{
-    if((b.pontos || 0) !== (a.pontos || 0))
-      return (b.pontos || 0) - (a.pontos || 0);
-    return (b.elo || 1000) - (a.elo || 1000);
+    if((b.pontos||0)!==(a.pontos||0))
+      return (b.pontos||0)-(a.pontos||0);
+    return (b.elo||1000)-(a.elo||1000);
   });
 
-  const campeao = jogadores[0];
+  const campeao=jogadores[0];
 
   await addDoc(collection(db,"campeoes"),{
-    nome: campeao.nome,
-    pontos: campeao.pontos || 0,
-    elo: campeao.elo || 1000,
-    data: new Date()
+    nome:campeao.nome,
+    pontos:campeao.pontos||0,
+    elo:campeao.elo||1000,
+    data:new Date()
   });
 
-  const premios = [100, 50, 25];
-
-  for(let i=0;i<3;i++){
-    const jogador = jogadores[i];
-    await updateDoc(doc(db,"jogadores",jogador.id),{
-      moedas: (jogador.moedas || 0) + premios[i]
+  for(let j of jogadores){
+    await updateDoc(doc(db,"jogadores",j.id),{
+      pontos:0,golsPro:0,golsContra:0,
+      vitorias:0,empates:0,derrotas:0
     });
   }
 
-  for(let jogador of jogadores){
-    await updateDoc(doc(db,"jogadores",jogador.id),{
-      pontos: 0,
-      golsPro: 0,
-      golsContra: 0,
-      vitorias: 0,
-      empates: 0,
-      derrotas: 0
-    });
-  }
-
-  alert("🏆 Temporada encerrada com sucesso!");
-};
-
-/* ================= ADMIN PRODUTOS ================= */
-
-window.adicionarProduto = async function(){
-
-  const nome = document.getElementById("novoProdutoNome").value.trim();
-  const preco = parseInt(document.getElementById("novoProdutoPreco").value);
-
-  if(!nome || isNaN(preco) || preco <= 0){
-    alert("Preencha corretamente.");
-    return;
-  }
-
-  await addDoc(collection(db,"produtos"),{ nome, preco });
-
-  document.getElementById("novoProdutoNome").value="";
-  document.getElementById("novoProdutoPreco").value="";
-};
-
-window.removerProduto = async function(id){
-  await deleteDoc(doc(db,"produtos",id));
+  alert("Temporada encerrada!");
 };
 
 /* ================= LOJA ================= */
 
 function atualizarSelectLoja(){
-  const select = document.getElementById("jogadorLoja");
+  const select=document.getElementById("jogadorLoja");
   select.innerHTML="";
   jogadores.forEach(j=>{
-    select.innerHTML += `<option value="${j.id}">${j.nome}</option>`;
+    select.innerHTML+=`<option value="${j.id}">${j.nome}</option>`;
   });
   atualizarSaldo();
+}
+
+function atualizarSaldo(){
+  const id=document.getElementById("jogadorLoja").value;
+  const jogador=jogadores.find(j=>j.id===id);
+  if(!jogador)return;
+  document.getElementById("saldoLoja").innerHTML=
+    `<h3>Saldo: 🪙 ${jogador.moedas||0}</h3>`;
 }
 
 document.getElementById("jogadorLoja")
 .addEventListener("change", atualizarSaldo);
 
-function atualizarSaldo(){
-  const id = document.getElementById("jogadorLoja").value;
-  const jogador = jogadores.find(j=>j.id === id);
-  if(!jogador) return;
+window.comprar=async function(produtoId,preco,nomeProduto){
 
-  document.getElementById("saldoLoja").innerHTML =
-    `<h3>🪙 Saldo: ${jogador.moedas || 0} SnSCoin</h3>`;
-}
+  const id=document.getElementById("jogadorLoja").value;
+  if(!id){alert("Selecione jogador.");return;}
 
-window.comprar = async function(produtoId, preco, nomeProduto){
+  const jogador=jogadores.find(j=>j.id===id);
+  if(!jogador)return;
 
-  const id = document.getElementById("jogadorLoja").value;
+  const saldo=jogador.moedas||0;
+  if(saldo<preco){alert("SnSCoin insuficiente.");return;}
 
-  if(!id){
-    alert("Selecione um jogador.");
-    return;
-  }
-
-  const jogador = jogadores.find(j=>j.id === id);
-  if(!jogador) return;
-
-  const saldo = jogador.moedas || 0;
-
-  if(saldo < preco){
-    alert("SnSCoin insuficiente.");
-    return;
-  }
-
-  let inventario = jogador.inventario ? [...jogador.inventario] : [];
+  let inventario=jogador.inventario? [...jogador.inventario]:[];
 
   if(inventario.includes(nomeProduto)){
     alert("Produto já comprado.");
     return;
   }
 
-  const novoSaldo = saldo - preco;
+  const novoSaldo=saldo-preco;
   inventario.push(nomeProduto);
 
   await updateDoc(doc(db,"jogadores",id),{
-    moedas: novoSaldo,
-    inventario: inventario
+    moedas:novoSaldo,
+    inventario:inventario
   });
 
-  jogador.moedas = novoSaldo;
-  jogador.inventario = inventario;
-
   atualizarSaldo();
+  alert("Compra realizada!");
+};
 
-  alert("Compra realizada com sucesso!");
+window.adicionarProduto=async function(){
+  const nome=document.getElementById("novoProdutoNome").value.trim();
+  const preco=parseInt(document.getElementById("novoProdutoPreco").value);
+
+  if(!nome||isNaN(preco)||preco<=0){
+    alert("Preencha corretamente.");
+    return;
+  }
+
+  await addDoc(collection(db,"produtos"),{nome,preco});
+  document.getElementById("novoProdutoNome").value="";
+  document.getElementById("novoProdutoPreco").value="";
+};
+
+window.removerProduto=async function(id){
+  await deleteDoc(doc(db,"produtos",id));
 };
 
 </script>
