@@ -33,7 +33,7 @@ h2{
 
 .tabela{
   width:95%;
-  max-width:1000px;
+  max-width:1100px;
   margin:20px auto;
   border-collapse:collapse;
 }
@@ -70,6 +70,22 @@ h2{
 .seta-down{
   color:#ff3c3c;
   font-weight:bold;
+}
+
+/* ===== BARRA DE DESEMPENHO ===== */
+
+.barra-container{
+  background:#222;
+  width:100px;
+  height:8px;
+  border-radius:10px;
+  overflow:hidden;
+  margin:auto;
+}
+
+.barra{
+  height:100%;
+  background:linear-gradient(90deg,#00ff88,#00f2ff);
 }
 
 footer{
@@ -146,6 +162,7 @@ function montarTabela(serie, lista){
         <th></th>
         <th>Nome</th>
         <th>Pts</th>
+        <th>Desempenho</th>
         <th>V</th>
         <th>E</th>
         <th>D</th>
@@ -160,9 +177,7 @@ function montarTabela(serie, lista){
     let classe = "";
     let indicador = "";
 
-    // ==================
     // PROMOÇÃO / REBAIXAMENTO
-    // ==================
 
     if(serie === "A"){
       if(index >= jogadoresSerie.length-2){
@@ -189,17 +204,26 @@ function montarTabela(serie, lista){
       }
     }
 
-    // Líder destaque extra
     if(index === 0){
       classe += " lider";
     }
+
+    // ===== CALCULAR DESEMPENHO =====
+    const maxPontos = 33; // 11 jogos x 3 pontos
+    const pontos = j.pontos || 0;
+    const percentual = Math.min((pontos / maxPontos) * 100, 100);
 
     html += `
       <tr class="${classe}">
         <td>${index+1}</td>
         <td>${indicador}</td>
         <td>${j.nome}</td>
-        <td>${j.pontos||0}</td>
+        <td>${pontos}</td>
+        <td>
+          <div class="barra-container">
+            <div class="barra" style="width:${percentual}%"></div>
+          </div>
+        </td>
         <td>${j.vitorias||0}</td>
         <td>${j.empates||0}</td>
         <td>${j.derrotas||0}</td>
