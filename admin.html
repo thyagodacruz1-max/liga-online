@@ -64,7 +64,7 @@ input,select{
 </div>
 
 <div class="section">
-  <h2>🔄 Promoção / Rebaixamento</h2>
+  <h2>🔄 Promoção / Rebaixamento Manual</h2>
   <button onclick="promoverRebaixarGeral()">
     Aplicar Promoção e Rebaixamento
   </button>
@@ -171,9 +171,11 @@ onSnapshot(collection(db,"produtos"), snapshot=>{
 
 /* ================= PROMOÇÃO / REBAIXAMENTO ================= */
 
-window.promoverRebaixarGeral = async function(){
+window.promoverRebaixarGeral = async function(auto = false){
 
-  if(!confirm("Aplicar promoção e rebaixamento?")) return;
+  if(!auto){
+    if(!confirm("Aplicar promoção e rebaixamento?")) return;
+  }
 
   const ordenar = lista => lista.sort((a,b)=>{
     if((b.pontos || 0)!==(a.pontos || 0))
@@ -185,13 +187,14 @@ window.promoverRebaixarGeral = async function(){
   const serieB = jogadores.filter(j=>j.serie==="B");
   const serieC = jogadores.filter(j=>j.serie==="C");
 
+  if(serieA.length !== 12 || serieB.length !== 12 || serieC.length !== 12){
+    alert("Cada série precisa ter exatamente 12 jogadores.");
+    return;
+  }
+
   ordenar(serieA);
   ordenar(serieB);
   ordenar(serieC);
-if(serieA.length !== 12 || serieB.length !== 12 || serieC.length !== 12){
-  alert("Cada série precisa ter exatamente 12 jogadores.");
-  return;
-}
 
   const rebaixadosA=[serieA[10],serieA[11]];
   const promovidosB=[serieB[0],serieB[1]];
@@ -210,7 +213,9 @@ if(serieA.length !== 12 || serieB.length !== 12 || serieC.length !== 12){
   for(let j of promovidosC)
     await updateDoc(doc(db,"jogadores",j.id),{serie:"B"});
 
-  alert("Promoção/Rebaixamento aplicado!");
+  if(!auto){
+    alert("Promoção/Rebaixamento aplicado!");
+  }
 };
 
 /* ================= ENCERRAR TEMPORADA ================= */
@@ -234,14 +239,22 @@ window.encerrarTemporada = async function(){
     data:new Date()
   });
 
+  // 🔥 PROMOÇÃO AUTOMÁTICA
+  await window.promoverRebaixarGeral(true);
+
+  // 🔥 ZERAR TEMPORADA
   for(let j of jogadores){
     await updateDoc(doc(db,"jogadores",j.id),{
-      pontos:0,golsPro:0,golsContra:0,
-      vitorias:0,empates:0,derrotas:0
+      pontos:0,
+      golsPro:0,
+      golsContra:0,
+      vitorias:0,
+      empates:0,
+      derrotas:0
     });
   }
 
-  alert("Temporada encerrada!");
+  alert("Temporada encerrada com promoção automática!");
 };
 
 /* ================= LOJA ================= */
