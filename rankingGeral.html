@@ -150,7 +150,6 @@ const buscaInput = document.getElementById("busca");
 
 let todosJogadores = [];
 
-// 🔥 Salvar tema no navegador
 if(localStorage.getItem("tema") === "light"){
   document.body.classList.add("light");
 }
@@ -251,11 +250,9 @@ function renderRanking(){
   });
 
   html += "</table>";
-
   rankingDiv.innerHTML = html;
 }
 
-// 🔥 Alternar tema e salvar
 window.alternarTema = function(){
   document.body.classList.toggle("light");
   localStorage.setItem(
