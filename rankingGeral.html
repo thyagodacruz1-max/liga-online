@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Ranking Geral</title>
+<style>
+body{
+  background:#0f0f0f;
+  color:white;
+  text-align:center;
+  font-family:Arial;
+}
+table{
+  width:90%;
+  margin:30px auto;
+  border-collapse:collapse;
+  background:#1c1c1c;
+}
+th,td{
+  padding:12px;
+  border-bottom:1px solid #333;
+}
+th{
+  background:#111;
+  color:#00f2ff;
+}
+</style>
+</head>
+<body>
+
+<h1>👑 Ranking Geral</h1>
+<div id="ranking"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, onSnapshot } 
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAgLb8XfVgjmOdyMWxdWKVOygMivU6TRM0",
+  authDomain: "liga-online-8f74d.firebaseapp.com",
+  projectId: "liga-online-8f74d",
+  appId: "1:815073531863:web:38dfaa7114fcda1b001d92"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const rankingDiv = document.getElementById("ranking");
+
+onSnapshot(collection(db,"jogadores"), (snapshot)=>{
+
+  let jogadores = [];
+
+  snapshot.forEach(doc=>{
+    const j = doc.data();
+    const score = (j.pontos || 0) + ((j.titulos || 0) * 10);
+
+    jogadores.push({
+      nome:j.nome,
+      score:score,
+      pontos:j.pontos||0,
+      titulos:j.titulos||0
+    });
+  });
+
+  jogadores.sort((a,b)=> b.score - a.score);
+
+  let html = `
+  <table>
+  <tr>
+  <th>#</th>
+  <th>Jogador</th>
+  <th>Pontos</th>
+  <th>Títulos</th>
+  <th>Score Geral</th>
+  </tr>
+  `;
+
+  jogadores.forEach((j,index)=>{
+    html += `
+    <tr>
+      <td>${index+1}</td>
+      <td>${j.nome}</td>
+      <td>${j.pontos}</td>
+      <td>${j.titulos}</td>
+      <td>${j.score}</td>
+    </tr>
+    `;
+  });
+
+  html += "</table>";
+  rankingDiv.innerHTML = html;
+});
+</script>
+
+</body>
+</html>
