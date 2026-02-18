@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classificação - Liga Online</title>
+
+<style>
+body{
+  background:#0f0f0f;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+}
+
+h1{
+  color:#00f2ff;
+  margin-top:20px;
+}
+
+.tabela{
+  width:95%;
+  max-width:900px;
+  margin:30px auto;
+  border-collapse:collapse;
+}
+
+.tabela th{
+  background:#00f2ff;
+  color:black;
+  padding:8px;
+}
+
+.tabela td{
+  padding:8px;
+  border-bottom:1px solid #333;
+}
+
+.lider{
+  background:#1f3d1f;
+}
+
+.rebaixado{
+  background:#3d1f1f;
+}
+
+h2{
+  margin-top:50px;
+  color:#00f2ff;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🏆 Classificação Oficial - Liga Online</h1>
+
+<div id="serieA"></div>
+<div id="serieB"></div>
+<div id="serieC"></div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { 
+  getFirestore,
+  collection,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAgLb8XfVgjmOdyMWxdWKVOygMivU6TRM0",
+  authDomain: "liga-online-8f74d.firebaseapp.com",
+  projectId:"liga-online-8f74d",
+  appId: "1:815073531863:web:625fe25cfe74e705001d92",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+onSnapshot(collection(db,"jogadores"), snapshot=>{
+
+  let jogadores = [];
+
+  snapshot.forEach(docSnap=>{
+    jogadores.push(docSnap.data());
+  });
+
+  montarTabela("A", jogadores);
+  montarTabela("B", jogadores);
+  montarTabela("C", jogadores);
+
+});
+
+function montarTabela(serie, lista){
+
+  const jogadoresSerie = lista
+    .filter(j => j.serie === serie)
+    .sort((a,b)=>{
+      if((b.pontos||0)!==(a.pontos||0))
+        return (b.pontos||0)-(a.pontos||0);
+      return (b.elo||1000)-(a.elo||1000);
+    });
+
+  let html = `<h2>🏅 Série ${serie}</h2>`;
+  html += `
+    <table class="tabela">
+      <tr>
+        <th>#</th>
+        <th>Nome</th>
+        <th>Pts</th>
+        <th>V</th>
+        <th>E</th>
+        <th>D</th>
+        <th>GP</th>
+        <th>GC</th>
+        <th>ELO</th>
+      </tr>
+  `;
+
+  jogadoresSerie.forEach((j, index)=>{
+
+    let classe = "";
+
+    if(index === 0) classe = "lider";
+    if(index >= jogadoresSerie.length-2) classe = "rebaixado";
+
+    html += `
+      <tr class="${classe}">
+        <td>${index+1}</td>
+        <td>${j.nome}</td>
+        <td>${j.pontos||0}</td>
+        <td>${j.vitorias||0}</td>
+        <td>${j.empates||0}</td>
+        <td>${j.derrotas||0}</td>
+        <td>${j.golsPro||0}</td>
+        <td>${j.golsContra||0}</td>
+        <td>${j.elo||1000}</td>
+      </tr>
+    `;
+  });
+
+  html += "</table>";
+
+  document.getElementById("serie"+serie).innerHTML = html;
+}
+
+</script>
+
+</body>
+</html>
