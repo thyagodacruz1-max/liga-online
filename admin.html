@@ -61,7 +61,7 @@ button{
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc } 
+import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, addDoc } 
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -99,6 +99,95 @@ async function carregarPendentes(){
 }
 
 window.recusar = async function(id){
+  // ===============================
+// RECUSAR RESULTADO
+// ===============================
+window.recusar = async function(id){
+  await deleteDoc(doc(db,"resultadosPendentes",id));
+  carregarPendentes();
+};
+
+// ===============================
+// APROVAR RESULTADO
+// ===============================
+window.aprovar = async function(id){
+
+  const docRef = doc(db,"resultadosPendentes",id);
+  const snap = await getDocs(collection(db,"resultadosPendentes"));
+
+  let partida;
+
+  snap.forEach(d=>{
+    if(d.id === id){
+      partida = d.data();
+    }
+  });
+
+  if(!partida){
+    alert("Partida não encontrada");
+    return;
+  }
+
+  const { jogador1, jogador2, gols1, gols2 } = partida;
+
+  const jogadoresSnap = await getDocs(collection(db,"jogadores"));
+
+  let ref1, ref2, dados1, dados2;
+
+  jogadoresSnap.forEach(d=>{
+    if(d.data().nome === jogador1){
+      ref1 = doc(db,"jogadores",d.id);
+      dados1 = d.data();
+    }
+    if(d.data().nome === jogador2){
+      ref2 = doc(db,"jogadores",d.id);
+      dados2 = d.data();
+    }
+  });
+
+  if(!ref1 || !ref2){
+    alert("Jogadores não encontrados");
+    return;
+  }
+
+  let pontos1 = 0;
+  let pontos2 = 0;
+
+  if(gols1 > gols2){
+    pontos1 = 3;
+  } else if(gols2 > gols1){
+    pontos2 = 3;
+  } else {
+    pontos1 = 1;
+    pontos2 = 1;
+  }
+
+  await updateDoc(ref1,{
+    pontos: dados1.pontos + pontos1,
+    golsPro: dados1.golsPro + gols1,
+    golsContra: dados1.golsContra + gols2
+  });
+
+  await updateDoc(ref2,{
+    pontos: dados2.pontos + pontos2,
+    golsPro: dados2.golsPro + gols2,
+    golsContra: dados2.golsContra + gols1
+  });
+
+  await addDoc(collection(db,"historico"),{
+    jogador1,
+    jogador2,
+    gols1,
+    gols2,
+    data: new Date().toLocaleDateString()
+  });
+
+  await deleteDoc(docRef);
+
+  alert("✅ Resultado aprovado!");
+  carregarPendentes();
+};
+
   await deleteDoc(doc(db,"resultadosPendentes",id));
   carregarPendentes();
 }
