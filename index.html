@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Classificação Oficial - Liga Online</title>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
 body{
   background:#0f0f0f;
@@ -49,50 +51,32 @@ h2{
   border-bottom:1px solid #333;
 }
 
-.lider{
-  background:#1f3d1f;
+button{
+  padding:6px 10px;
+  background:#00f2ff;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
   font-weight:bold;
 }
 
-.promovido{
-  background:#1a3f1a;
-}
-
-.rebaixado{
-  background:#3d1f1f;
-}
-
-.seta-up{
-  color:#00ff88;
-  font-weight:bold;
-}
-
-.seta-down{
-  color:#ff3c3c;
-  font-weight:bold;
-}
-
-/* ===== BARRA DE DESEMPENHO ===== */
-
-.barra-container{
-  background:#222;
-  width:100px;
-  height:8px;
-  border-radius:10px;
-  overflow:hidden;
-  margin:auto;
-}
-
-.barra{
+#modal{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
   height:100%;
-  background:linear-gradient(90deg,#00ff88,#00f2ff);
+  background:rgba(0,0,0,0.9);
+  display:none;
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
 }
 
-footer{
-  margin-top:50px;
+canvas{
+  background:#111;
   padding:20px;
-  font-size:14px;
-  color:#888;
+  border-radius:10px;
 }
 </style>
 </head>
@@ -107,9 +91,12 @@ footer{
 <div id="serieB"></div>
 <div id="serieC"></div>
 
-<footer>
-  Atualização automática em tempo real ⚡
-</footer>
+<div id="modal">
+  <h2 id="tituloGrafico"></h2>
+  <canvas id="grafico" width="400" height="250"></canvas>
+  <br>
+  <button onclick="fecharGrafico()">Fechar</button>
+</div>
 
 <script type="module">
 
@@ -130,23 +117,22 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+let jogadoresGlobal = [];
+
 onSnapshot(collection(db,"jogadores"), snapshot=>{
-
-  let jogadores = [];
-
+  jogadoresGlobal = [];
   snapshot.forEach(docSnap=>{
-    jogadores.push(docSnap.data());
+    jogadoresGlobal.push(docSnap.data());
   });
 
-  montarTabela("A", jogadores);
-  montarTabela("B", jogadores);
-  montarTabela("C", jogadores);
-
+  montarTabela("A");
+  montarTabela("B");
+  montarTabela("C");
 });
 
-function montarTabela(serie, lista){
+function montarTabela(serie){
 
-  const jogadoresSerie = lista
+  const jogadoresSerie = jogadoresGlobal
     .filter(j => j.serie === serie)
     .sort((a,b)=>{
       if((b.pontos||0)!==(a.pontos||0))
@@ -159,88 +145,71 @@ function montarTabela(serie, lista){
     <table class="tabela">
       <tr>
         <th>#</th>
-        <th></th>
         <th>Nome</th>
         <th>Pts</th>
-        <th>Desempenho</th>
         <th>V</th>
-        <th>E</th>
-        <th>D</th>
-        <th>GP</th>
-        <th>GC</th>
-        <th>ELO</th>
+        <th>Gráfico</th>
       </tr>
   `;
 
   jogadoresSerie.forEach((j, index)=>{
 
-    let classe = "";
-    let indicador = "";
-
-    // PROMOÇÃO / REBAIXAMENTO
-
-    if(serie === "A"){
-      if(index >= jogadoresSerie.length-2){
-        classe = "rebaixado";
-        indicador = `<span class="seta-down">⬇</span>`;
-      }
-    }
-
-    if(serie === "B"){
-      if(index <= 1){
-        classe = "promovido";
-        indicador = `<span class="seta-up">⬆</span>`;
-      }
-      if(index >= jogadoresSerie.length-2){
-        classe = "rebaixado";
-        indicador = `<span class="seta-down">⬇</span>`;
-      }
-    }
-
-    if(serie === "C"){
-      if(index <= 1){
-        classe = "promovido";
-        indicador = `<span class="seta-up">⬆</span>`;
-      }
-    }
-
-    if(index === 0){
-      classe += " lider";
-    }
-
-    // ===== CALCULAR DESEMPENHO =====
-    const maxPontos = 33; // 11 jogos x 3 pontos
-    const pontos = j.pontos || 0;
-    const percentual = Math.min((pontos / maxPontos) * 100, 100);
-
     html += `
-      <tr class="${classe}">
+      <tr>
         <td>${index+1}</td>
-        <td>${indicador}</td>
         <td>${j.nome}</td>
-        <td>${pontos}</td>
-        <td>
-          <div class="barra-container">
-            <div class="barra" style="width:${percentual}%"></div>
-          </div>
-        </td>
+        <td>${j.pontos||0}</td>
         <td>${j.vitorias||0}</td>
-        <td>${j.empates||0}</td>
-        <td>${j.derrotas||0}</td>
-        <td>${j.golsPro||0}</td>
-        <td>${j.golsContra||0}</td>
-        <td>${j.elo||1000}</td>
+        <td>
+          <button onclick="mostrarGrafico('${j.nome}', ${j.pontos||0})">
+            📈 Ver
+          </button>
+        </td>
       </tr>
     `;
   });
 
   html += "</table>";
-
   document.getElementById("serie"+serie).innerHTML = html;
+}
+
+window.mostrarGrafico = function(nome, pontos){
+
+  document.getElementById("modal").style.display = "flex";
+  document.getElementById("tituloGrafico").innerText = "Evolução - " + nome;
+
+  const ctx = document.getElementById("grafico").getContext("2d");
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['Início', 'Rodada 3', 'Rodada 6', 'Rodada 9', 'Atual'],
+      datasets: [{
+        label: 'Pontos',
+        data: [0, pontos*0.3, pontos*0.6, pontos*0.8, pontos],
+        borderColor: '#00f2ff',
+        backgroundColor: '#00f2ff',
+        tension: 0.3
+      }]
+    },
+    options: {
+      plugins:{
+        legend:{ labels:{ color:'white' } }
+      },
+      scales:{
+        x:{ ticks:{ color:'white' } },
+        y:{ ticks:{ color:'white' } }
+      }
+    }
+  });
+}
+
+window.fecharGrafico = function(){
+  document.getElementById("modal").style.display = "none";
+  document.getElementById("grafico").getContext("2d").clearRect(0,0,400,250);
 }
 
 </script>
 
 </body>
 </html>
-
