@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tabela - Liga Online</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#0f0f0f;
+  color:white;
+  text-align:center;
+}
+
+h1{
+  color:#00f2ff;
+  margin-top:20px;
+}
+
+select{
+  padding:10px;
+  margin:20px;
+  border-radius:6px;
+  border:none;
+}
+
+table{
+  width:90%;
+  margin:auto;
+  border-collapse:collapse;
+  background:#1c1c1c;
+}
+
+th, td{
+  padding:10px;
+  border-bottom:1px solid #333;
+}
+
+th{
+  background:#111;
+  color:#00f2ff;
+}
+
+tr:hover{
+  background:#222;
+}
+
+.lider{
+  background:#ffd70033;
+}
+
+.rebaixamento{
+  background:#ff000033;
+}
+
+.voltar{
+  margin:20px;
+  display:inline-block;
+  padding:10px 15px;
+  background:#00f2ff;
+  color:black;
+  text-decoration:none;
+  border-radius:6px;
+  font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<h1>📊 Tabela do Campeonato</h1>
+
+<select id="serieSelect" onchange="carregarTabela()">
+  <option value="A">Série A</option>
+  <option value="B">Série B</option>
+  <option value="C">Série C</option>
+</select>
+
+<div id="tabelaContainer"></div>
+
+<a href="index.html" class="voltar">Voltar</a>
+
+<script>
+
+const dados = {
+  A: [
+    {nome:"TCRUZ", pts:18, gp:15, gc:5},
+    {nome:"PLAYER2", pts:15, gp:12, gc:6},
+    {nome:"PLAYER3", pts:12, gp:10, gc:8},
+    {nome:"PLAYER4", pts:9, gp:9, gc:9},
+    {nome:"PLAYER5", pts:6, gp:7, gc:12},
+    {nome:"PLAYER6", pts:3, gp:5, gc:15}
+  ],
+  B: [
+    {nome:"GAMER1", pts:16, gp:14, gc:7},
+    {nome:"GAMER2", pts:13, gp:11, gc:9},
+    {nome:"GAMER3", pts:10, gp:9, gc:10},
+    {nome:"GAMER4", pts:7, gp:6, gc:11},
+    {nome:"GAMER5", pts:4, gp:5, gc:13},
+    {nome:"GAMER6", pts:2, gp:4, gc:15}
+  ],
+  C: [
+    {nome:"NEW1", pts:14, gp:13, gc:6},
+    {nome:"NEW2", pts:11, gp:10, gc:8},
+    {nome:"NEW3", pts:8, gp:8, gc:9},
+    {nome:"NEW4", pts:6, gp:6, gc:12},
+    {nome:"NEW5", pts:3, gp:4, gc:14},
+    {nome:"NEW6", pts:1, gp:3, gc:16}
+  ]
+};
+
+function carregarTabela(){
+
+  const serie = document.getElementById("serieSelect").value;
+  const jogadores = dados[serie];
+
+  jogadores.sort((a,b)=> b.pts - a.pts);
+
+  let html = "<table>";
+  html += "<tr><th>#</th><th>Jogador</th><th>PTS</th><th>GP</th><th>GC</th></tr>";
+
+  jogadores.forEach((j, index)=>{
+
+    let classe = "";
+
+    if(index === 0) classe = "lider";
+    if(index >= jogadores.length-2) classe = "rebaixamento";
+
+    html += `
+      <tr class="${classe}">
+        <td>${index+1}</td>
+        <td>${j.nome}</td>
+        <td>${j.pts}</td>
+        <td>${j.gp}</td>
+        <td>${j.gc}</td>
+      </tr>
+    `;
+  });
+
+  html += "</table>";
+
+  document.getElementById("tabelaContainer").innerHTML = html;
+}
+
+carregarTabela();
+
+</script>
+
+</body>
+</html>
