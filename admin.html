@@ -74,6 +74,63 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 window.lancarResultado = async function(){
+window.encerrarTemporada = async function(){
+
+  const snapshot = await getDocs(collection(db, "jogadores"));
+
+  let jogadores = [];
+
+  snapshot.forEach(d=>{
+    jogadores.push({
+      id: d.id,
+      ...d.data()
+    });
+  });
+
+  let serieA = jogadores.filter(j=> j.serie === "A");
+  let serieB = jogadores.filter(j=> j.serie === "B");
+  let serieC = jogadores.filter(j=> j.serie === "C");
+
+  // Ordenar por pontos
+  serieA.sort((a,b)=> b.pontos - a.pontos);
+  serieB.sort((a,b)=> b.pontos - a.pontos);
+  serieC.sort((a,b)=> b.pontos - a.pontos);
+
+  // 🔥 2 últimos descem / 2 primeiros sobem
+  const rebaixadosA = serieA.slice(-2);
+  const promovidosB = serieB.slice(0,2);
+
+  const rebaixadosB = serieB.slice(-2);
+  const promovidosC = serieC.slice(0,2);
+
+  // Atualizar séries
+  for(let j of rebaixadosA){
+    await updateDoc(doc(db,"jogadores",j.id), { serie:"B" });
+  }
+
+  for(let j of promovidosB){
+    await updateDoc(doc(db,"jogadores",j.id), { serie:"A" });
+  }
+
+  for(let j of rebaixadosB){
+    await updateDoc(doc(db,"jogadores",j.id), { serie:"C" });
+  }
+
+  for(let j of promovidosC){
+    await updateDoc(doc(db,"jogadores",j.id), { serie:"B" });
+  }
+
+  // Resetar temporada
+  for(let j of jogadores){
+    await updateDoc(doc(db,"jogadores",j.id), {
+      pontos:0,
+      golsPro:0,
+      golsContra:0
+    });
+  }
+
+  alert("🏆 Temporada encerrada! Promoções e rebaixamentos aplicados.");
+}
 
   const nome1 = document.getElementById("j1").value;
   const nome2 = document.getElementById("j2").value;
