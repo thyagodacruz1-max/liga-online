@@ -15,17 +15,16 @@ body{
 
 h1{ color:#00f2ff; }
 
+.section{
+  margin:40px 0;
+}
+
 .card{
   background:#1c1c1c;
   padding:20px;
   margin:20px auto;
   width:350px;
   border-radius:12px;
-}
-
-.liderCard{
-  border:2px solid gold;
-  box-shadow:0 0 15px gold;
 }
 
 button{
@@ -39,12 +38,7 @@ button{
 
 .confirmar{ background:#00ff88; }
 .bloquear{ background:#ff4444; color:white; }
-
-.dashboard{
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:center;
-}
+.comprar{ background:#ffaa00; }
 
 .stat{
   background:#1c1c1c;
@@ -52,14 +46,14 @@ button{
   padding:20px;
   width:200px;
   border-radius:10px;
+  display:inline-block;
 }
 
-input{
+select,input{
   padding:6px;
-  margin-top:5px;
+  margin:5px;
   border-radius:6px;
   border:none;
-  width:100px;
 }
 </style>
 </head>
@@ -68,27 +62,38 @@ input{
 
 <h1>⚙️ Painel Admin - Liga Online</h1>
 
-<h2>📊 Dashboard da Liga</h2>
+<!-- ================= DASHBOARD ================= -->
+<div class="section">
+  <h2>📊 Dashboard</h2>
 
-<div class="dashboard">
   <div class="stat">👥 Jogadores<br><strong id="totalJogadores">0</strong></div>
-  <div class="stat">💰 Total Arrecadado<br><strong id="totalArrecadado">R$ 0</strong></div>
+  <div class="stat">💰 Arrecadado<br><strong id="totalArrecadado">R$ 0</strong></div>
   <div class="stat">🪙 Total Moedas<br><strong id="totalMoedas">0</strong></div>
-  <div class="stat">📈 Média ELO<br><strong id="mediaElo">0</strong></div>
 </div>
 
-<h2>💳 Controle de Pagamentos</h2>
-<div id="listaJogadores"></div>
+<!-- ================= PAGAMENTOS ================= -->
+<div class="section">
+  <h2>💳 Pagamentos</h2>
+  <div id="listaJogadores"></div>
+</div>
+
+<!-- ================= LOJA ================= -->
+<div class="section">
+  <h2>🛒 Loja da Liga</h2>
+
+  <select id="jogadorLoja"></select>
+  <div id="saldoLoja"></div>
+  <div id="itensLoja"></div>
+</div>
 
 <script type="module">
 
-import { initializeApp } 
-from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
   getFirestore,
   collection,
   onSnapshot,
+  getDocs,
   doc,
   updateDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -103,142 +108,58 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+let jogadores = [];
+
+// ================= DASHBOARD + PAGAMENTOS =================
 onSnapshot(collection(db,"jogadores"), (snapshot)=>{
 
   let total = 0;
-  let totalDinheiro = 0;
-  let somaElo = 0;
-  let somaMoedas = 0;
+  let dinheiro = 0;
+  let moedas = 0;
 
-  let jogadores = [];
+  jogadores = [];
+
+  let html = "";
 
   snapshot.forEach(docSnap=>{
     const j = docSnap.data();
+
     total++;
-    totalDinheiro += j.valorPago || 0;
-    somaElo += j.elo || 1000;
-    somaMoedas += j.moedas || 0;
+    dinheiro += j.valorPago || 0;
+    moedas += j.moedas || 0;
 
-    jogadores.push({
-      id: docSnap.id,
-      ...j
-    });
-  });
+    jogadores.push({ id: docSnap.id, ...j });
 
-  jogadores.sort((a,b)=>{
-    if(b.pontos !== a.pontos) return b.pontos - a.pontos;
-    return b.elo - a.elo;
-  });
-
-  document.getElementById("totalJogadores").innerText = total;
-  document.getElementById("totalArrecadado").innerText = 
-    "R$ " + totalDinheiro.toFixed(2);
-  document.getElementById("totalMoedas").innerText = somaMoedas;
-  document.getElementById("mediaElo").innerText = 
-    total > 0 ? Math.round(somaElo / total) : 0;
-
-  let listaHTML = "";
-
-  jogadores.forEach((j,index)=>{
-
-    const classe = index === 0 ? "card liderCard" : "card";
-
-    listaHTML += `
-      <div class="${classe}">
-        <strong>${index+1}º - ${j.nome}</strong><br>
-        Série: ${j.serie}<br>
-        Pontos: ${j.pontos} | ELO: ${j.elo}<br>
+    html += `
+      <div class="card">
+        <strong>${j.nome}</strong><br>
+        Pago: ${j.pago ? "✅" : "🚫"}<br>
+        Valor: R$ ${j.valorPago || 0}<br>
         🪙 Moedas: ${j.moedas || 0}<br>
-        Pago: ${j.pago ? "✅ Sim" : "🚫 Não"}<br>
-        Valor Atual: R$ ${(j.valorPago || 0).toFixed(2)}<br><br>
-
-        <input type="number" id="valor-${j.id}" placeholder="Valor">
-
-        <br>
-        <button class="confirmar" onclick="confirmarPagamento('${j.id}')">
-          Confirmar
-        </button>
-
-        <button class="bloquear" onclick="bloquearPagamento('${j.id}')">
-          Bloquear
-        </button>
+        <button class="confirmar" onclick="confirmarPagamento('${docSnap.id}')">Confirmar</button>
+        <button class="bloquear" onclick="bloquearPagamento('${docSnap.id}')">Bloquear</button>
       </div>
     `;
   });
 
-  document.getElementById("listaJogadores").innerHTML = listaHTML;
+  document.getElementById("totalJogadores").innerText = total;
+  document.getElementById("totalArrecadado").innerText = "R$ " + dinheiro.toFixed(2);
+  document.getElementById("totalMoedas").innerText = moedas;
 
+  document.getElementById("listaJogadores").innerHTML = html;
+
+  carregarSelectLoja();
 });
 
-// ===============================
-// SISTEMA DE MOEDAS + ELO
-// ===============================
-async function atualizarEstatisticas(ref, dados, golsPro, golsContra){
-
-  let pontos = 0;
-  let v = 0, e = 0, d = 0;
-
-  if(golsPro > golsContra){
-    pontos = 3;
-    v = 1;
-  }
-  else if(golsPro < golsContra){
-    d = 1;
-  }
-  else{
-    pontos = 1;
-    e = 1;
-  }
-
-  // 🪙 MOEDAS
-  let moedasGanhos = 2;
-
-  if(golsPro > golsContra){
-    moedasGanhos = 10;
-  }
-  else if(golsPro === golsContra){
-    moedasGanhos = 5;
-  }
-
-  // 📈 ELO
-  const K = 30;
-  const eloAtual = dados.elo || 1000;
-
-  let resultado = 0.5;
-  if(golsPro > golsContra) resultado = 1;
-  if(golsPro < golsContra) resultado = 0;
-
-  const expectativa = 1 / (1 + Math.pow(10, (1000 - eloAtual)/400));
-  const novoElo = Math.round(eloAtual + K * (resultado - expectativa));
-
-  await updateDoc(ref,{
-    pontos: (dados.pontos || 0) + pontos,
-    golsPro: (dados.golsPro || 0) + golsPro,
-    golsContra: (dados.golsContra || 0) + golsContra,
-    vitorias: (dados.vitorias || 0) + v,
-    empates: (dados.empates || 0) + e,
-    derrotas: (dados.derrotas || 0) + d,
-    elo: novoElo,
-    moedas: (dados.moedas || 0) + moedasGanhos
-  });
-}
-
+// ================= PAGAMENTO =================
 window.confirmarPagamento = async function(id){
-
-  const valorInput = document.getElementById("valor-"+id);
-  const valor = parseFloat(valorInput.value);
-
-  if(isNaN(valor) || valor <= 0){
-    alert("Digite um valor válido.");
-    return;
-  }
+  const valor = prompt("Digite o valor pago:");
+  if(!valor) return;
 
   await updateDoc(doc(db,"jogadores",id),{
     pago: true,
-    valorPago: valor
+    valorPago: parseFloat(valor)
   });
-
-  valorInput.value = "";
 };
 
 window.bloquearPagamento = async function(id){
@@ -248,8 +169,81 @@ window.bloquearPagamento = async function(id){
   });
 };
 
+// ================= LOJA =================
+
+const itens = [
+  { nome:"🎖 Badge Ouro", preco:50 },
+  { nome:"🔥 Boost ELO +20", preco:100 },
+  { nome:"👑 Título Especial", preco:150 }
+];
+
+function carregarSelectLoja(){
+  const select = document.getElementById("jogadorLoja");
+  select.innerHTML = "";
+
+  jogadores.forEach(j=>{
+    select.innerHTML += `<option value="${j.id}">${j.nome}</option>`;
+  });
+
+  atualizarSaldoLoja();
+}
+
+document.getElementById("jogadorLoja")
+.addEventListener("change", atualizarSaldoLoja);
+
+function atualizarSaldoLoja(){
+  const id = document.getElementById("jogadorLoja").value;
+  const jogador = jogadores.find(j=>j.id === id);
+
+  if(!jogador) return;
+
+  document.getElementById("saldoLoja").innerHTML =
+    `<h3>🪙 Saldo: ${jogador.moedas || 0}</h3>`;
+
+  criarItensLoja();
+}
+
+function criarItensLoja(){
+  let html = "";
+
+  itens.forEach(item=>{
+    html += `
+      <div class="card">
+        ${item.nome}<br>
+        Preço: 🪙 ${item.preco}<br>
+        <button class="comprar" onclick="comprar('${item.nome}',${item.preco})">
+          Comprar
+        </button>
+      </div>
+    `;
+  });
+
+  document.getElementById("itensLoja").innerHTML = html;
+}
+
+window.comprar = async function(nome, preco){
+
+  const id = document.getElementById("jogadorLoja").value;
+  const jogador = jogadores.find(j=>j.id === id);
+
+  if((jogador.moedas || 0) < preco){
+    alert("🚫 Moedas insuficientes!");
+    return;
+  }
+
+  const novoSaldo = (jogador.moedas || 0) - preco;
+  const inventario = jogador.inventario || [];
+  inventario.push(nome);
+
+  await updateDoc(doc(db,"jogadores",id),{
+    moedas: novoSaldo,
+    inventario: inventario
+  });
+
+  alert("✅ Compra realizada!");
+};
+
 </script>
 
 </body>
 </html>
-
