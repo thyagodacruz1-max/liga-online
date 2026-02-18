@@ -51,10 +51,25 @@ h2{
 
 .lider{
   background:#1f3d1f;
+  font-weight:bold;
+}
+
+.promovido{
+  background:#1a3f1a;
 }
 
 .rebaixado{
   background:#3d1f1f;
+}
+
+.seta-up{
+  color:#00ff88;
+  font-weight:bold;
+}
+
+.seta-down{
+  color:#ff3c3c;
+  font-weight:bold;
 }
 
 footer{
@@ -128,6 +143,7 @@ function montarTabela(serie, lista){
     <table class="tabela">
       <tr>
         <th>#</th>
+        <th></th>
         <th>Nome</th>
         <th>Pts</th>
         <th>V</th>
@@ -142,17 +158,46 @@ function montarTabela(serie, lista){
   jogadoresSerie.forEach((j, index)=>{
 
     let classe = "";
+    let indicador = "";
 
-    // Líder
-    if(index === 0) classe = "lider";
+    // ==================
+    // PROMOÇÃO / REBAIXAMENTO
+    // ==================
 
-    // Últimos 2 (zona de rebaixamento)
-    if(index >= jogadoresSerie.length-2)
-      classe = "rebaixado";
+    if(serie === "A"){
+      if(index >= jogadoresSerie.length-2){
+        classe = "rebaixado";
+        indicador = `<span class="seta-down">⬇</span>`;
+      }
+    }
+
+    if(serie === "B"){
+      if(index <= 1){
+        classe = "promovido";
+        indicador = `<span class="seta-up">⬆</span>`;
+      }
+      if(index >= jogadoresSerie.length-2){
+        classe = "rebaixado";
+        indicador = `<span class="seta-down">⬇</span>`;
+      }
+    }
+
+    if(serie === "C"){
+      if(index <= 1){
+        classe = "promovido";
+        indicador = `<span class="seta-up">⬆</span>`;
+      }
+    }
+
+    // Líder destaque extra
+    if(index === 0){
+      classe += " lider";
+    }
 
     html += `
       <tr class="${classe}">
         <td>${index+1}</td>
+        <td>${indicador}</td>
         <td>${j.nome}</td>
         <td>${j.pontos||0}</td>
         <td>${j.vitorias||0}</td>
@@ -174,3 +219,4 @@ function montarTabela(serie, lista){
 
 </body>
 </html>
+
