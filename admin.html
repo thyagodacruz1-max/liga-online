@@ -15,9 +15,7 @@ body{
 
 h1{ color:#00f2ff; }
 
-.section{
-  margin:40px 0;
-}
+.section{ margin:40px 0; }
 
 .card{
   background:#1c1c1c;
@@ -25,6 +23,11 @@ h1{ color:#00f2ff; }
   margin:20px auto;
   width:350px;
   border-radius:12px;
+  transition:0.2s;
+}
+
+.card:hover{
+  transform:scale(1.02);
 }
 
 button{
@@ -49,7 +52,7 @@ button{
   display:inline-block;
 }
 
-select,input{
+select{
   padding:6px;
   margin:5px;
   border-radius:6px;
@@ -62,27 +65,27 @@ select,input{
 
 <h1>⚙️ Painel Admin - Liga Online</h1>
 
-<!-- ================= DASHBOARD ================= -->
+<!-- DASHBOARD -->
 <div class="section">
   <h2>📊 Dashboard</h2>
-
   <div class="stat">👥 Jogadores<br><strong id="totalJogadores">0</strong></div>
   <div class="stat">💰 Arrecadado<br><strong id="totalArrecadado">R$ 0</strong></div>
   <div class="stat">🪙 Total Moedas<br><strong id="totalMoedas">0</strong></div>
 </div>
 
-<!-- ================= PAGAMENTOS ================= -->
+<!-- PAGAMENTOS -->
 <div class="section">
   <h2>💳 Pagamentos</h2>
   <div id="listaJogadores"></div>
 </div>
 
-<!-- ================= LOJA ================= -->
+<!-- LOJA -->
 <div class="section">
   <h2>🛒 Loja da Liga</h2>
 
   <select id="jogadorLoja"></select>
   <div id="saldoLoja"></div>
+  <div id="inventarioLoja"></div>
   <div id="itensLoja"></div>
 </div>
 
@@ -93,7 +96,6 @@ import {
   getFirestore,
   collection,
   onSnapshot,
-  getDocs,
   doc,
   updateDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -110,7 +112,7 @@ const db = getFirestore(app);
 
 let jogadores = [];
 
-// ================= DASHBOARD + PAGAMENTOS =================
+// ================= ATUALIZAÇÃO EM TEMPO REAL =================
 onSnapshot(collection(db,"jogadores"), (snapshot)=>{
 
   let total = 0;
@@ -118,7 +120,6 @@ onSnapshot(collection(db,"jogadores"), (snapshot)=>{
   let moedas = 0;
 
   jogadores = [];
-
   let html = "";
 
   snapshot.forEach(docSnap=>{
@@ -136,6 +137,7 @@ onSnapshot(collection(db,"jogadores"), (snapshot)=>{
         Pago: ${j.pago ? "✅" : "🚫"}<br>
         Valor: R$ ${j.valorPago || 0}<br>
         🪙 Moedas: ${j.moedas || 0}<br>
+        🧰 Itens: ${(j.inventario || []).join(", ") || "Nenhum"}<br>
         <button class="confirmar" onclick="confirmarPagamento('${docSnap.id}')">Confirmar</button>
         <button class="bloquear" onclick="bloquearPagamento('${docSnap.id}')">Bloquear</button>
       </div>
@@ -145,13 +147,12 @@ onSnapshot(collection(db,"jogadores"), (snapshot)=>{
   document.getElementById("totalJogadores").innerText = total;
   document.getElementById("totalArrecadado").innerText = "R$ " + dinheiro.toFixed(2);
   document.getElementById("totalMoedas").innerText = moedas;
-
   document.getElementById("listaJogadores").innerHTML = html;
 
-  carregarSelectLoja();
+  atualizarSelectLoja();
 });
 
-// ================= PAGAMENTO =================
+// ================= PAGAMENTOS =================
 window.confirmarPagamento = async function(id){
   const valor = prompt("Digite o valor pago:");
   if(!valor) return;
@@ -177,33 +178,36 @@ const itens = [
   { nome:"👑 Título Especial", preco:150 }
 ];
 
-function carregarSelectLoja(){
+function atualizarSelectLoja(){
   const select = document.getElementById("jogadorLoja");
-  select.innerHTML = "";
 
+  const jogadorAtual = select.value;
+
+  select.innerHTML = "";
   jogadores.forEach(j=>{
     select.innerHTML += `<option value="${j.id}">${j.nome}</option>`;
   });
 
-  atualizarSaldoLoja();
+  if(jogadorAtual) select.value = jogadorAtual;
+
+  atualizarLoja();
 }
 
 document.getElementById("jogadorLoja")
-.addEventListener("change", atualizarSaldoLoja);
+.addEventListener("change", atualizarLoja);
 
-function atualizarSaldoLoja(){
+function atualizarLoja(){
+
   const id = document.getElementById("jogadorLoja").value;
   const jogador = jogadores.find(j=>j.id === id);
-
   if(!jogador) return;
 
   document.getElementById("saldoLoja").innerHTML =
     `<h3>🪙 Saldo: ${jogador.moedas || 0}</h3>`;
 
-  criarItensLoja();
-}
+  document.getElementById("inventarioLoja").innerHTML =
+    `<p>🧰 Inventário: ${(jogador.inventario || []).join(", ") || "Nenhum"}</p>`;
 
-function criarItensLoja(){
   let html = "";
 
   itens.forEach(item=>{
@@ -226,18 +230,36 @@ window.comprar = async function(nome, preco){
   const id = document.getElementById("jogadorLoja").value;
   const jogador = jogadores.find(j=>j.id === id);
 
+  if(!jogador){
+    alert("Selecione um jogador.");
+    return;
+  }
+
   if((jogador.moedas || 0) < preco){
     alert("🚫 Moedas insuficientes!");
     return;
   }
 
+  let inventario = jogador.inventario || [];
+
+  if(nome === "🎖 Badge Ouro" && inventario.includes(nome)){
+    alert("Este jogador já possui essa Badge!");
+    return;
+  }
+
+  let novoElo = jogador.elo || 1000;
+
+  if(nome === "🔥 Boost ELO +20"){
+    novoElo += 20;
+  }
+
   const novoSaldo = (jogador.moedas || 0) - preco;
-  const inventario = jogador.inventario || [];
   inventario.push(nome);
 
   await updateDoc(doc(db,"jogadores",id),{
     moedas: novoSaldo,
-    inventario: inventario
+    inventario: inventario,
+    elo: novoElo
   });
 
   alert("✅ Compra realizada!");
@@ -247,3 +269,4 @@ window.comprar = async function(nome, preco){
 
 </body>
 </html>
+
