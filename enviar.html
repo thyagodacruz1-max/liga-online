@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Enviar Resultado</title>
+<title>Registrar Resultado</title>
+
 <style>
 body{
   background:#0f0f0f;
@@ -10,12 +11,14 @@ body{
   text-align:center;
   font-family:Arial;
 }
+
 input{
   padding:8px;
   margin:5px;
   border-radius:6px;
   border:none;
 }
+
 button{
   padding:10px;
   background:#00f2ff;
@@ -28,12 +31,13 @@ button{
 </head>
 <body>
 
-<h2>📤 Enviar Resultado</h2>
+<h2>📤 Registrar Resultado</h2>
 
-<input type="text" id="j1" placeholder="Seu nome"><br>
-<input type="number" id="g1" placeholder="Seus gols"><br>
-<input type="text" id="j2" placeholder="Adversário"><br>
-<input type="number" id="g2" placeholder="Gols adversário"><br>
+<input type="text" id="j1" placeholder="Jogador 1"><br>
+<input type="number" id="g1" placeholder="Gols jogador 1"><br>
+
+<input type="text" id="j2" placeholder="Jogador 2"><br>
+<input type="number" id="g2" placeholder="Gols jogador 2"><br>
 
 <button onclick="enviar()">Registrar Resultado</button>
 
@@ -41,20 +45,20 @@ button{
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
-  getFirestore, 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
-  doc, 
-  updateDoc 
+  getFirestore,
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAgLb8XfVgjmOdyMWxdWKVOygMivU6TRM0",
+  apiKey: "SUA_API_KEY_AQUI",
   authDomain: "liga-online-8f74d.firebaseapp.com",
   projectId: "liga-online-8f74d",
-  appId: "1:815073531863:web:38dfaa7114fcda1b001d92"
+  appId: "1:815073531863:web:625fe25cfe74e705001d92"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -68,103 +72,94 @@ window.enviar = async function(){
   const gols2 = parseInt(document.getElementById("g2").value);
 
   if(!nome1 || !nome2 || isNaN(gols1) || isNaN(gols2)){
-    alert("Preencha tudo corretamente.");
+    alert("Preencha corretamente.");
     return;
   }
 
-  // 🔎 Buscar jogador 1
+  // Buscar jogador 1
   const q1 = query(collection(db,"jogadores"), where("nome","==",nome1));
   const snap1 = await getDocs(q1);
+  if(snap1.empty){ alert("Jogador 1 não encontrado."); return; }
 
-  if(snap1.empty){
-    alert("Jogador 1 não encontrado.");
-    return;
-  }
-
-  const doc1 = snap1.docs[0];
-  const jogador1 = doc1.data();
-
-  // 🔎 Buscar jogador 2
+  // Buscar jogador 2
   const q2 = query(collection(db,"jogadores"), where("nome","==",nome2));
   const snap2 = await getDocs(q2);
+  if(snap2.empty){ alert("Jogador 2 não encontrado."); return; }
 
-  if(snap2.empty){
-    alert("Jogador 2 não encontrado.");
-    return;
-  }
-
+  const doc1 = snap1.docs[0];
   const doc2 = snap2.docs[0];
-  const jogador2 = doc2.data();
 
-  // ================= CÁLCULOS =================
+  const j1 = doc1.data();
+  const j2 = doc2.data();
 
-  let pontos1 = jogador1.pontos || 0;
-  let pontos2 = jogador2.pontos || 0;
+  let pontos1 = j1.pontos || 0;
+  let pontos2 = j2.pontos || 0;
 
-  let vitorias1 = jogador1.vitorias || 0;
-  let vitorias2 = jogador2.vitorias || 0;
+  let vitorias1 = j1.vitorias || 0;
+  let vitorias2 = j2.vitorias || 0;
 
-  let empates1 = jogador1.empates || 0;
-  let empates2 = jogador2.empates || 0;
+  let empates1 = j1.empates || 0;
+  let empates2 = j2.empates || 0;
 
-  let derrotas1 = jogador1.derrotas || 0;
-  let derrotas2 = jogador2.derrotas || 0;
+  let derrotas1 = j1.derrotas || 0;
+  let derrotas2 = j2.derrotas || 0;
 
-  let moedas1 = jogador1.moedas || 0;
-  let moedas2 = jogador2.moedas || 0;
+  let moedas1 = j1.moedas || 0;
+  let moedas2 = j2.moedas || 0;
 
-  // ⚽ +1 SnSCoin por gol
+  // Moedas por gol
   moedas1 += gols1;
   moedas2 += gols2;
 
   if(gols1 > gols2){
-
     pontos1 += 3;
     vitorias1 += 1;
     derrotas2 += 1;
-
-    // 💰 +10 por vitória
     moedas1 += 10;
-
-  } else if(gols2 > gols1){
-
+  } 
+  else if(gols2 > gols1){
     pontos2 += 3;
     vitorias2 += 1;
     derrotas1 += 1;
-
     moedas2 += 10;
-
-  } else {
-
+  } 
+  else{
     pontos1 += 1;
     pontos2 += 1;
     empates1 += 1;
     empates2 += 1;
   }
 
-  // ================= ATUALIZAR FIRESTORE =================
+  // Histórico automático
+  let historico1 = j1.historicoPontos || [];
+  let historico2 = j2.historicoPontos || [];
+
+  historico1.push(pontos1);
+  historico2.push(pontos2);
 
   await updateDoc(doc(db,"jogadores",doc1.id),{
-    pontos: pontos1,
-    vitorias: vitorias1,
-    empates: empates1,
-    derrotas: derrotas1,
-    golsPro: (jogador1.golsPro || 0) + gols1,
-    golsContra: (jogador1.golsContra || 0) + gols2,
-    moedas: moedas1
+    pontos:pontos1,
+    vitorias:vitorias1,
+    empates:empates1,
+    derrotas:derrotas1,
+    golsPro:(j1.golsPro||0)+gols1,
+    golsContra:(j1.golsContra||0)+gols2,
+    moedas:moedas1,
+    historicoPontos:historico1
   });
 
   await updateDoc(doc(db,"jogadores",doc2.id),{
-    pontos: pontos2,
-    vitorias: vitorias2,
-    empates: empates2,
-    derrotas: derrotas2,
-    golsPro: (jogador2.golsPro || 0) + gols2,
-    golsContra: (jogador2.golsContra || 0) + gols1,
-    moedas: moedas2
+    pontos:pontos2,
+    vitorias:vitorias2,
+    empates:empates2,
+    derrotas:derrotas2,
+    golsPro:(j2.golsPro||0)+gols2,
+    golsContra:(j2.golsContra||0)+gols1,
+    moedas:moedas2,
+    historicoPontos:historico2
   });
 
-  alert("✅ Resultado registrado com bônus automático!");
+  alert("✅ Resultado registrado com histórico automático!");
 
 };
 
