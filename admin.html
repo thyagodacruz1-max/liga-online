@@ -88,12 +88,13 @@ async function carregarPendentes(){
 
     html += `
       <div style="margin:10px;">
-        ${p.jogador1} ${p.gols1} x ${p.gols2} ${p.jogador2}
-        <br>
-        <button onclick="recusar('${docSnap.id}')">Recusar</button>
-      </div>
-    `;
-  });
+  ${p.jogador1} ${p.gols1} x ${p.gols2} ${p.jogador2}
+      <br>
+      <button onclick="aprovar('${docSnap.id}')">Aprovar</button>
+      <button onclick="recusar('${docSnap.id}')">Recusar</button>
+    </div>
+  `;
+});
 
   document.getElementById("pendentes").innerHTML = html;
 }
