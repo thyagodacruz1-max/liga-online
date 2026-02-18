@@ -12,11 +12,8 @@ body{
   font-family:Arial;
   text-align:center;
 }
-
 h1{ color:#00f2ff; }
-
 .section{ margin:40px 0; }
-
 .card{
   background:#1c1c1c;
   padding:20px;
@@ -24,7 +21,6 @@ h1{ color:#00f2ff; }
   width:350px;
   border-radius:12px;
 }
-
 button{
   padding:8px 12px;
   margin:5px;
@@ -33,9 +29,7 @@ button{
   cursor:pointer;
   font-weight:bold;
 }
-
 .remover{ background:#aa0000; color:white; }
-
 .stat{
   background:#1c1c1c;
   margin:10px;
@@ -44,7 +38,6 @@ button{
   border-radius:10px;
   display:inline-block;
 }
-
 input,select{
   padding:6px;
   margin:5px;
@@ -58,7 +51,6 @@ input,select{
 
 <h1>⚙️ Painel Admin - Liga Online</h1>
 
-<!-- DASHBOARD -->
 <div class="section">
   <h2>📊 Dashboard</h2>
   <div class="stat">👥 Jogadores<br><strong id="totalJogadores">0</strong></div>
@@ -66,35 +58,26 @@ input,select{
   <div class="stat">🪙 SnSCoin Total<br><strong id="totalMoedas">0</strong></div>
 </div>
 
-<!-- PREMIAÇÃO -->
 <div class="section">
   <h2>🏆 Premiação da Temporada</h2>
   <button onclick="premiarTemporada()">Premiar Top 3</button>
 </div>
 
-<!-- ENCERRAR TEMPORADA -->
 <div class="section">
   <h2>🏁 Encerrar Temporada</h2>
-  <button onclick="encerrarTemporada()">
-    Encerrar Temporada Completa
-  </button>
+  <button onclick="encerrarTemporada()">Encerrar Temporada Completa</button>
 </div>
 
-<!-- ADMIN PRODUTOS -->
 <div class="section">
   <h2>🛠️ Gerenciar Produtos (Admin)</h2>
-
   <input type="text" id="novoProdutoNome" placeholder="Nome do produto">
   <input type="number" id="novoProdutoPreco" placeholder="Preço em SnSCoin">
   <button onclick="adicionarProduto()">Adicionar Produto</button>
-
   <div id="listaProdutosAdmin"></div>
 </div>
 
-<!-- LOJA -->
 <div class="section">
   <h2>🛒 Loja - SnSCoin</h2>
-
   <select id="jogadorLoja"></select>
   <div id="saldoLoja"></div>
   <div id="itensLoja"></div>
@@ -114,10 +97,10 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
-  authDomain: "SEU_AUTH",
-  projectId: "SEU_PROJECT_ID",
-  appId: "SEU_APP_ID"
+  apiKey: "AIzaSyAgLb8XfVgjmOdyMWxdWKVOygMivU6TRM0",
+  authDomain: "liga-online-8f74d.firebaseapp.com",
+  projectId:"liga-online-8f74d",
+  appId: "1:815073531863:web:625fe25cfe74e705001d92",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -129,7 +112,6 @@ let produtos = [];
 /* ================= JOGADORES ================= */
 
 onSnapshot(collection(db,"jogadores"), snapshot=>{
-
   jogadores = [];
   let total = 0;
   let dinheiro = 0;
@@ -144,7 +126,7 @@ onSnapshot(collection(db,"jogadores"), snapshot=>{
   });
 
   document.getElementById("totalJogadores").innerText = total;
-  document.getElementById("totalArrecadado").innerText = "R$ "+dinheiro.toFixed(2);
+  document.getElementById("totalArrecadado").innerText = "R$ " + dinheiro.toFixed(2);
   document.getElementById("totalMoedas").innerText = moedas;
 
   atualizarSelectLoja();
@@ -153,7 +135,6 @@ onSnapshot(collection(db,"jogadores"), snapshot=>{
 /* ================= PRODUTOS ================= */
 
 onSnapshot(collection(db,"produtos"), snapshot=>{
-
   produtos = [];
   let htmlAdmin = "";
   let htmlLoja = "";
@@ -165,9 +146,9 @@ onSnapshot(collection(db,"produtos"), snapshot=>{
     htmlAdmin += `
       <div class="card">
         ${p.nome} - 🪙 ${p.preco} SnSCoin
-        <button class="remover"
-        onclick="removerProduto('${docSnap.id}')">
-        Remover</button>
+        <button class="remover" onclick="removerProduto('${docSnap.id}')">
+          Remover
+        </button>
       </div>
     `;
 
@@ -175,8 +156,9 @@ onSnapshot(collection(db,"produtos"), snapshot=>{
       <div class="card">
         ${p.nome}<br>
         Preço: 🪙 ${p.preco} SnSCoin<br>
-        <button onclick="comprar('${p.id}',${p.preco},'${p.nome}')">
-        Comprar</button>
+        <button onclick="comprar('${docSnap.id}', ${p.preco}, '${p.nome.replace(/'/g,"")}')">
+          Comprar
+        </button>
       </div>
     `;
   });
@@ -204,10 +186,8 @@ window.premiarTemporada = async function(){
 
   for(let i=0;i<3;i++){
     const jogador = jogadores[i];
-    const novoSaldo = (jogador.moedas || 0) + premios[i];
-
     await updateDoc(doc(db,"jogadores",jogador.id),{
-      moedas: novoSaldo
+      moedas: (jogador.moedas || 0) + premios[i]
     });
   }
 
@@ -233,7 +213,6 @@ window.encerrarTemporada = async function(){
     return (b.elo || 1000) - (a.elo || 1000);
   });
 
-  const premios = [100, 50, 25];
   const campeao = jogadores[0];
 
   await addDoc(collection(db,"campeoes"),{
@@ -243,12 +222,12 @@ window.encerrarTemporada = async function(){
     data: new Date()
   });
 
+  const premios = [100, 50, 25];
+
   for(let i=0;i<3;i++){
     const jogador = jogadores[i];
-    const novoSaldo = (jogador.moedas || 0) + premios[i];
-
     await updateDoc(doc(db,"jogadores",jogador.id),{
-      moedas: novoSaldo
+      moedas: (jogador.moedas || 0) + premios[i]
     });
   }
 
@@ -291,14 +270,11 @@ window.removerProduto = async function(id){
 /* ================= LOJA ================= */
 
 function atualizarSelectLoja(){
-
   const select = document.getElementById("jogadorLoja");
   select.innerHTML="";
-
   jogadores.forEach(j=>{
     select.innerHTML += `<option value="${j.id}">${j.nome}</option>`;
   });
-
   atualizarSaldo();
 }
 
@@ -306,7 +282,6 @@ document.getElementById("jogadorLoja")
 .addEventListener("change", atualizarSaldo);
 
 function atualizarSaldo(){
-
   const id = document.getElementById("jogadorLoja").value;
   const jogador = jogadores.find(j=>j.id === id);
   if(!jogador) return;
@@ -318,10 +293,18 @@ function atualizarSaldo(){
 window.comprar = async function(produtoId, preco, nomeProduto){
 
   const id = document.getElementById("jogadorLoja").value;
+
+  if(!id){
+    alert("Selecione um jogador.");
+    return;
+  }
+
   const jogador = jogadores.find(j=>j.id === id);
   if(!jogador) return;
 
-  if((jogador.moedas || 0) < preco){
+  const saldo = jogador.moedas || 0;
+
+  if(saldo < preco){
     alert("SnSCoin insuficiente.");
     return;
   }
@@ -333,18 +316,22 @@ window.comprar = async function(produtoId, preco, nomeProduto){
     return;
   }
 
-  const novoSaldo = (jogador.moedas || 0) - preco;
+  const novoSaldo = saldo - preco;
   inventario.push(nomeProduto);
 
   await updateDoc(doc(db,"jogadores",id),{
     moedas: novoSaldo,
-    inventario
+    inventario: inventario
   });
 
-  alert("Compra realizada!");
+  jogador.moedas = novoSaldo;
+  jogador.inventario = inventario;
+
+  atualizarSaldo();
+
+  alert("Compra realizada com sucesso!");
 };
 
 </script>
-
 </body>
 </html>
