@@ -3,126 +3,65 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Liga Online</title>
+<title>Classificação Oficial - Liga Online</title>
 
 <style>
 body{
-  margin:0;
-  font-family:Arial, sans-serif;
   background:#0f0f0f;
   color:white;
+  font-family:Arial;
+  text-align:center;
+  margin:0;
+  padding:0;
 }
 
 header{
-  background:#111;
+  background:#000;
   padding:20px;
-  text-align:center;
   border-bottom:2px solid #00f2ff;
 }
 
-header h1{
+h1{
   color:#00f2ff;
   margin:0;
-  font-size:32px;
 }
 
-nav{
-  margin-top:15px;
-}
-
-nav a{
-  color:white;
-  margin:0 15px;
-  text-decoration:none;
-  font-weight:bold;
-  transition:0.3s;
-}
-
-nav a:hover{
+h2{
+  margin-top:50px;
   color:#00f2ff;
 }
 
-.banner{
-  text-align:center;
-  padding:20px;
+.tabela{
+  width:95%;
+  max-width:1000px;
+  margin:20px auto;
+  border-collapse:collapse;
 }
 
-.banner img{
-  width:90%;
-  max-height:200px;
-  border-radius:10px;
-  box-shadow:0 0 20px #00f2ff;
-}
-
-.series{
-  display:flex;
-  justify-content:center;
-  flex-wrap:wrap;
-  padding:40px 20px;
-  gap:20px;
-}
-
-.card{
-  background:#1c1c1c;
-  width:250px;
-  padding:20px;
-  border-radius:12px;
-  text-align:center;
-  box-shadow:0 0 15px #00f2ff30;
-  transition:0.3s;
-}
-
-.card:hover{
-  transform:scale(1.05);
-  box-shadow:0 0 20px #00f2ff;
-}
-
-.card h2{
-  margin:0;
-}
-
-.serieA{color:#ffd700;}
-.serieB{color:#00ff99;}
-.serieC{color:#ff4dff;}
-
-.btn{
-  display:inline-block;
-  margin-top:15px;
-  padding:10px 15px;
+.tabela th{
   background:#00f2ff;
-  border:none;
-  border-radius:6px;
-  font-weight:bold;
-  cursor:pointer;
-  text-decoration:none;
   color:black;
+  padding:8px;
+}
+
+.tabela td{
+  padding:8px;
+  border-bottom:1px solid #333;
+}
+
+.lider{
+  background:#1f3d1f;
+}
+
+.rebaixado{
+  background:#3d1f1f;
 }
 
 footer{
-  background:#111;
+  margin-top:50px;
   padding:20px;
-  text-align:center;
-  border-top:2px solid #00f2ff;
-  margin-top:40px;
-}
-
-.patrocinadores img{
-  width:120px;
-  margin:10px;
-  filter:grayscale(100%);
-  transition:0.3s;
-}
-
-.patrocinadores img:hover{
-  filter:grayscale(0%);
-  transform:scale(1.1);
-}
-
-@media(max-width:768px){
-  .series{
-    flex-direction:column;
-    align-items:center;
-  }
+  font-size:14px;
+  color:#888;
 }
 </style>
 </head>
@@ -130,52 +69,108 @@ footer{
 <body>
 
 <header>
-  <h1>🏆 LIGA ONLINE</h1>
-  <nav>
-<a href="tabela.html">Tabela</a>
-<a href="rodadas.html">Rodadas</a>
-<a href="ranking.html">Ranking</a>
-<a href="regras.html">Regras</a>
-<a href="login.html">Login</a>
- </nav>
-    
+  <h1>🏆 Liga Online - Classificação Oficial</h1>
 </header>
 
-<div class="banner">
-  <img src="https://via.placeholder.com/1200x200/111111/00f2ff?text=Patrocinador+Master" alt="Patrocinador Master">
-</div>
-
-<section class="series">
-
-  <div class="card">
-    <h2 class="serieA">SÉRIE A</h2>
-    <p>12 jogadores - Elite</p>
-    <a href="#" class="btn">Ver Tabela</a>
-  </div>
-
-  <div class="card">
-    <h2 class="serieB">SÉRIE B</h2>
-    <p>12 jogadores - Acesso</p>
-    <a href="#" class="btn">Ver Tabela</a>
-  </div>
-
-  <div class="card">
-    <h2 class="serieC">SÉRIE C</h2>
-    <p>12 jogadores - Entrada</p>
-    <a href="#" class="btn">Ver Tabela</a>
-  </div>
-
-</section>
+<div id="serieA"></div>
+<div id="serieB"></div>
+<div id="serieC"></div>
 
 <footer>
-  <h3>Patrocinadores Oficiais</h3>
-  <div class="patrocinadores">
-    <img src="https://via.placeholder.com/120x60/000000/ffffff?text=Patro+1">
-    <img src="https://via.placeholder.com/120x60/000000/ffffff?text=Patro+2">
-    <img src="https://via.placeholder.com/120x60/000000/ffffff?text=Patro+3">
-  </div>
-  <p>© 2026 Liga Online - Todos os direitos reservados</p>
+  Atualização automática em tempo real ⚡
 </footer>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { 
+  getFirestore,
+  collection,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAgLb8XfVgjmOdyMWxdWKVOygMivU6TRM0",
+  authDomain: "liga-online-8f74d.firebaseapp.com",
+  projectId:"liga-online-8f74d",
+  appId: "1:815073531863:web:625fe25cfe74e705001d92",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+onSnapshot(collection(db,"jogadores"), snapshot=>{
+
+  let jogadores = [];
+
+  snapshot.forEach(docSnap=>{
+    jogadores.push(docSnap.data());
+  });
+
+  montarTabela("A", jogadores);
+  montarTabela("B", jogadores);
+  montarTabela("C", jogadores);
+
+});
+
+function montarTabela(serie, lista){
+
+  const jogadoresSerie = lista
+    .filter(j => j.serie === serie)
+    .sort((a,b)=>{
+      if((b.pontos||0)!==(a.pontos||0))
+        return (b.pontos||0)-(a.pontos||0);
+      return (b.elo||1000)-(a.elo||1000);
+    });
+
+  let html = `<h2>🏅 Série ${serie}</h2>`;
+  html += `
+    <table class="tabela">
+      <tr>
+        <th>#</th>
+        <th>Nome</th>
+        <th>Pts</th>
+        <th>V</th>
+        <th>E</th>
+        <th>D</th>
+        <th>GP</th>
+        <th>GC</th>
+        <th>ELO</th>
+      </tr>
+  `;
+
+  jogadoresSerie.forEach((j, index)=>{
+
+    let classe = "";
+
+    // Líder
+    if(index === 0) classe = "lider";
+
+    // Últimos 2 (zona de rebaixamento)
+    if(index >= jogadoresSerie.length-2)
+      classe = "rebaixado";
+
+    html += `
+      <tr class="${classe}">
+        <td>${index+1}</td>
+        <td>${j.nome}</td>
+        <td>${j.pontos||0}</td>
+        <td>${j.vitorias||0}</td>
+        <td>${j.empates||0}</td>
+        <td>${j.derrotas||0}</td>
+        <td>${j.golsPro||0}</td>
+        <td>${j.golsContra||0}</td>
+        <td>${j.elo||1000}</td>
+      </tr>
+    `;
+  });
+
+  html += "</table>";
+
+  document.getElementById("serie"+serie).innerHTML = html;
+}
+
+</script>
 
 </body>
 </html>
