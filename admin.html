@@ -110,14 +110,21 @@ onSnapshot(collection(db,"jogadores"), (snapshot)=>{
 
   jogadores.forEach((j,index)=>{
 
+    let medalha = "";
     let classe = "";
+
     if(index === 0 && j.titulos > 0){
+      medalha = "🥇";
       classe = "lider";
+    } else if(index === 1){
+      medalha = "🥈";
+    } else if(index === 2){
+      medalha = "🥉";
     }
 
     html += `
       <tr class="${classe}">
-        <td>${index+1}</td>
+        <td>${medalha} ${index+1}</td>
         <td>${j.nome}</td>
         <td>${j.titulos}</td>
       </tr>
@@ -134,3 +141,4 @@ onSnapshot(collection(db,"jogadores"), (snapshot)=>{
 
 </body>
 </html>
+
