@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Histórico de Campeões</title>
+<style>
+body{
+  background:#0f0f0f;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+}
+h1{ color:#ffd700; }
+.card{
+  background:#1c1c1c;
+  margin:15px auto;
+  padding:15px;
+  width:300px;
+  border-radius:10px;
+}
+</style>
+</head>
+<body>
+
+<h1>🏆 Histórico de Campeões</h1>
+<div id="lista"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, onSnapshot } 
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "SUA_KEY",
+  authDomain: "SEU_AUTH",
+  projectId: "liga-online-8f74d",
+  appId: "SEU_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const lista = document.getElementById("lista");
+
+onSnapshot(collection(db,"campeoes"), (snapshot)=>{
+  let html = "";
+
+  snapshot.forEach(doc=>{
+    const c = doc.data();
+    html += `
+      <div class="card">
+        🥇 <b>${c.nome}</b><br>
+        ${c.data}
+      </div>
+    `;
+  });
+
+  lista.innerHTML = html;
+});
+</script>
+
+</body>
+</html>
