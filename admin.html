@@ -3,65 +3,73 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel Admin</title>
+<title>Hall da Fama - Liga Online</title>
 
 <style>
 body{
+  margin:0;
+  font-family:Arial;
   background:#0f0f0f;
   color:white;
-  font-family:Arial;
   text-align:center;
 }
 
 h1{
-  color:#00f2ff;
+  color:#ffd700;
+  margin-top:20px;
 }
 
-input{
-  padding:8px;
-  margin:5px;
-  border-radius:6px;
-  border:none;
+table{
+  width:90%;
+  margin:30px auto;
+  border-collapse:collapse;
+  background:#1c1c1c;
 }
 
-button{
+th, td{
+  padding:12px;
+  border-bottom:1px solid #333;
+}
+
+th{
+  background:#111;
+  color:#ffd700;
+}
+
+tr:hover{
+  background:#222;
+}
+
+.lider{
+  background:#ffd70033;
+  font-weight:bold;
+}
+
+.voltar{
+  margin:20px;
+  display:inline-block;
   padding:10px 15px;
-  background:#00f2ff;
-  border:none;
+  background:#ffd700;
+  color:black;
+  text-decoration:none;
   border-radius:6px;
   font-weight:bold;
-  cursor:pointer;
-}
-
-.card{
-  background:#1c1c1c;
-  padding:20px;
-  margin:30px auto;
-  width:350px;
-  border-radius:12px;
 }
 </style>
 </head>
 
 <body>
 
-<h1>⚙️ Painel Admin - Lançar Resultado</h1>
+<h1>👑 Hall da Fama</h1>
 
-<div class="card">
-  <input type="text" id="j1" placeholder="Nome Jogador 1"><br>
-  <input type="number" id="g1" placeholder="Gols Jogador 1"><br>
-  <input type="text" id="j2" placeholder="Nome Jogador 2"><br>
-  <input type="number" id="g2" placeholder="Gols Jogador 2"><br>
-  <button onclick="lancarResultado()">Salvar Resultado</button>
-</div>
-<br><br>
-<button onclick="encerrarTemporada()">Encerrar Temporada</button>
-<h2>📋 Resultados Pendentes</h2>
-<div id="pendentes"></div>
+<div id="ranking"></div>
+
+<a href="index.html" class="voltar">Voltar</a>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, addDoc } 
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, onSnapshot } 
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -74,259 +82,55 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ===============================
-// CARREGAR RESULTADOS PENDENTES
-// ===============================
-async function carregarPendentes(){
+const rankingDiv = document.getElementById("ranking");
 
-  const snapshot = await getDocs(collection(db,"resultadosPendentes"));
-
-  let html = "";
-
-  snapshot.forEach(docSnap=>{
-    const p = docSnap.data();
-
-    html += `
-      <div style="margin:10px;">
-  ${p.jogador1} ${p.gols1} x ${p.gols2} ${p.jogador2}
-      <br>
-      <button onclick="aprovar('${docSnap.id}')">Aprovar</button>
-      <button onclick="recusar('${docSnap.id}')">Recusar</button>
-    </div>
-  `;
-});
-
-  document.getElementById("pendentes").innerHTML = html;
-}
-
-// ===============================
-// RECUSAR RESULTADO
-// ===============================
-window.recusar = async function(id){
-  await deleteDoc(doc(db,"resultadosPendentes",id));
-  carregarPendentes();
-};
-
-// ===============================
-// APROVAR RESULTADO
-// ===============================
-window.aprovar = async function(id){
-
-  const docRef = doc(db,"resultadosPendentes",id);
-  const snap = await getDocs(collection(db,"resultadosPendentes"));
-
-  let partida;
-
-  snap.forEach(d=>{
-    if(d.id === id){
-      partida = d.data();
-    }
-  });
-
-  if(!partida){
-    alert("Partida não encontrada");
-    return;
-  }
-
-  const { jogador1, jogador2, gols1, gols2 } = partida;
-
-  const jogadoresSnap = await getDocs(collection(db,"jogadores"));
-
-  let ref1, ref2, dados1, dados2;
-
-  jogadoresSnap.forEach(d=>{
-    if(d.data().nome === jogador1){
-      ref1 = doc(db,"jogadores",d.id);
-      dados1 = d.data();
-    }
-    if(d.data().nome === jogador2){
-      ref2 = doc(db,"jogadores",d.id);
-      dados2 = d.data();
-    }
-  });
-
-  if(!ref1 || !ref2){
-    alert("Jogadores não encontrados");
-    return;
-  }
-
-  let pontos1 = 0;
-  let pontos2 = 0;
-
-  if(gols1 > gols2){
-    pontos1 = 3;
-  } else if(gols2 > gols1){
-    pontos2 = 3;
-  } else {
-    pontos1 = 1;
-    pontos2 = 1;
-  }
-
-  await updateDoc(ref1,{
-    pontos: dados1.pontos + pontos1,
-    golsPro: dados1.golsPro + gols1,
-    golsContra: dados1.golsContra + gols2
-  });
-
-  await updateDoc(ref2,{
-    pontos: dados2.pontos + pontos2,
-    golsPro: dados2.golsPro + gols2,
-    golsContra: dados2.golsContra + gols1
-  });
-
-  await addDoc(collection(db,"historico"),{
-    jogador1,
-    jogador2,
-    gols1,
-    gols2,
-    data: new Date().toLocaleDateString()
-  });
-
-  await deleteDoc(docRef);
-
-  alert("✅ Resultado aprovado!");
-  carregarPendentes();
-};
-
-// ===============================
-// LANÇAR RESULTADO
-// ===============================
-window.lancarResultado = async function(){
-
-  const nome1 = document.getElementById("j1").value;
-  const nome2 = document.getElementById("j2").value;
-  const gols1 = parseInt(document.getElementById("g1").value);
-  const gols2 = parseInt(document.getElementById("g2").value);
-
-  const snapshot = await getDocs(collection(db, "jogadores"));
-
-  let ref1, ref2, dados1, dados2;
-
-  snapshot.forEach(d=>{
-    if(d.data().nome === nome1){
-      ref1 = doc(db, "jogadores", d.id);
-      dados1 = d.data();
-    }
-    if(d.data().nome === nome2){
-      ref2 = doc(db, "jogadores", d.id);
-      dados2 = d.data();
-    }
-  });
-
-  if(!ref1 || !ref2){
-    alert("Jogador não encontrado!");
-    return;
-  }
-
-  let pontos1 = 0;
-  let pontos2 = 0;
-
-  if(gols1 > gols2){
-    pontos1 = 3;
-  } else if(gols2 > gols1){
-    pontos2 = 3;
-  } else {
-    pontos1 = 1;
-    pontos2 = 1;
-  }
-
-  await updateDoc(ref1, {
-    pontos: dados1.pontos + pontos1,
-    golsPro: dados1.golsPro + gols1,
-    golsContra: dados1.golsContra + gols2
-  });
-
-  await updateDoc(ref2, {
-    pontos: dados2.pontos + pontos2,
-    golsPro: dados2.golsPro + gols2,
-    golsContra: dados2.golsContra + gols1
-  });
-
-  alert("Resultado lançado com sucesso!");
-}
-
-// ===============================
-// ENCERRAR TEMPORADA
-// ===============================
-window.encerrarTemporada = async function(){
-// 🔥 Definir número da temporada
-  if(!confirm("Tem certeza que deseja encerrar a temporada?")){
-  return;
-}
-
-const numeroTemporada = Date.now();
-
-  const snapshot = await getDocs(collection(db, "jogadores"));
+onSnapshot(collection(db,"jogadores"), (snapshot)=>{
 
   let jogadores = [];
 
-  snapshot.forEach(d=>{
+  snapshot.forEach(doc=>{
+    const data = doc.data();
     jogadores.push({
-      id: d.id,
-      ...d.data()
+      nome: data.nome,
+      titulos: data.titulos || 0
     });
   });
 
-  let serieA = jogadores.filter(j=> j.serie === "A");
-  let serieB = jogadores.filter(j=> j.serie === "B");
-  let serieC = jogadores.filter(j=> j.serie === "C");
+  // Ordena por títulos (maior primeiro)
+  jogadores.sort((a,b)=> b.titulos - a.titulos);
 
-  serieA.sort((a,b)=> b.pontos - a.pontos);
-  serieB.sort((a,b)=> b.pontos - a.pontos);
-  serieC.sort((a,b)=> b.pontos - a.pontos);
-  if(serieA.length === 0){
-  alert("Nenhum jogador na Série A");
-  return;
-}
+  let html = `
+    <table>
+      <tr>
+        <th>#</th>
+        <th>Jogador</th>
+        <th>🏆 Títulos</th>
+      </tr>
+  `;
 
-// 🔥 Campeão da Série A
-const campeao = serieA[0];
+  jogadores.forEach((j,index)=>{
 
-// 🔥 Salvar campeão no histórico com temporada
-await addDoc(collection(db,"campeoes"),{
-  nome: campeao.nome,
-  pontos: campeao.pontos,
-  temporada: numeroTemporada,
-  data: new Date().toLocaleDateString()
+    let classe = "";
+    if(index === 0 && j.titulos > 0){
+      classe = "lider";
+    }
+
+    html += `
+      <tr class="${classe}">
+        <td>${index+1}</td>
+        <td>${j.nome}</td>
+        <td>${j.titulos}</td>
+      </tr>
+    `;
+  });
+
+  html += "</table>";
+
+  rankingDiv.innerHTML = html;
+
 });
 
-// 🔥 Atualizar títulos do campeão
-await updateDoc(doc(db,"jogadores",campeao.id),{
-  titulos: (campeao.titulos || 0) + 1
-});
+</script>
 
-  const rebaixadosA = serieA.slice(-2);
-  const promovidosB = serieB.slice(0,2);
-
-  const rebaixadosB = serieB.slice(-2);
-  const promovidosC = serieC.slice(0,2);
-
-  for(let j of rebaixadosA){
-    await updateDoc(doc(db,"jogadores",j.id), { serie:"B" });
-  }
-
-  for(let j of promovidosB){
-    await updateDoc(doc(db,"jogadores",j.id), { serie:"A" });
-  }
-
-  for(let j of rebaixadosB){
-    await updateDoc(doc(db,"jogadores",j.id), { serie:"C" });
-  }
-
-  for(let j of promovidosC){
-    await updateDoc(doc(db,"jogadores",j.id), { serie:"B" });
-  }
-
-  for(let j of jogadores){
-    await updateDoc(doc(db,"jogadores",j.id), {
-      pontos:0,
-      golsPro:0,
-      golsContra:0
-    });
-  }
-
-  alert("🏆 Temporada encerrada!");
-}
-
-carregarPendentes();
-
+</body>
+</html>
