@@ -15,39 +15,46 @@ body{
 
 h1{
   color:#00f2ff;
-  margin-top:20px;
-}
-
-input{
-  padding:8px;
-  margin:5px;
-  border-radius:6px;
-  border:none;
-}
-
-button{
-  padding:10px 15px;
-  background:#00f2ff;
-  border:none;
-  border-radius:6px;
-  font-weight:bold;
-  cursor:pointer;
 }
 
 .card{
   background:#1c1c1c;
   padding:20px;
-  margin:30px auto;
+  margin:20px auto;
   width:350px;
   border-radius:12px;
 }
 
-.pendente{
-  margin:10px auto;
-  padding:15px;
-  width:350px;
+button{
+  padding:8px 12px;
+  margin:5px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.confirmar{
+  background:#00ff88;
+}
+
+.bloquear{
+  background:#ff4444;
+  color:white;
+}
+
+.dashboard{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+
+.stat{
   background:#1c1c1c;
-  border-radius:8px;
+  margin:10px;
+  padding:20px;
+  width:200px;
+  border-radius:10px;
 }
 </style>
 </head>
@@ -56,16 +63,37 @@ button{
 
 <h1>⚙️ Painel Admin - Liga Online</h1>
 
-<div class="card">
-  <input type="text" id="j1" placeholder="Nome Jogador 1"><br>
-  <input type="number" id="g1" placeholder="Gols Jogador 1"><br>
-  <input type="text" id="j2" placeholder="Nome Jogador 2"><br>
-  <input type="number" id="g2" placeholder="Gols Jogador 2"><br>
-  <button onclick="lancarResultado()">Lançar Resultado</button>
+<h2>📊 Dashboard da Liga</h2>
+
+<div class="dashboard">
+  <div class="stat">
+    👥 Jogadores<br>
+    <strong id="totalJogadores">0</strong>
+  </div>
+  <div class="stat">
+    💰 Total Arrecadado<br>
+    <strong id="totalArrecadado">R$ 0</strong>
+  </div>
+  <div class="stat">
+    ✅ Pagos<br>
+    <strong id="totalPagos">0</strong>
+  </div>
+  <div class="stat">
+    🚫 Não Pagos<br>
+    <strong id="totalNaoPagos">0</strong>
+  </div>
+  <div class="stat">
+    🏆 Líder Atual<br>
+    <strong id="liderAtual">-</strong>
+  </div>
+  <div class="stat">
+    📈 Média ELO<br>
+    <strong id="mediaElo">0</strong>
+  </div>
 </div>
 
-<h2>📋 Resultados Pendentes</h2>
-<div id="pendentes"></div>
+<h2>💳 Controle de Pagamentos</h2>
+<div id="listaJogadores"></div>
 
 <script type="module">
 
@@ -73,13 +101,11 @@ import { initializeApp }
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 
 import { 
-  getFirestore, 
-  collection, 
+  getFirestore,
+  collection,
   getDocs,
-  getDoc,
   doc,
-  updateDoc,
-  deleteDoc
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -92,170 +118,85 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ===============================
-// CARREGAR PENDENTES
-// ===============================
-async function carregarPendentes(){
-  const snapshot = await getDocs(collection(db,"resultadosPendentes"));
-  let html = "";
+async function carregarDashboard(){
+
+  const snapshot = await getDocs(collection(db,"jogadores"));
+
+  let total = 0;
+  let pagos = 0;
+  let naoPagos = 0;
+  let totalDinheiro = 0;
+  let somaElo = 0;
+  let lider = null;
+
+  let listaHTML = "";
 
   snapshot.forEach(docSnap=>{
-    const p = docSnap.data();
+    const j = docSnap.data();
+    total++;
 
-    html += `
-      <div class="pendente">
-        <strong>${p.jogador1}</strong> ${p.gols1} x ${p.gols2} <strong>${p.jogador2}</strong>
-        <br><br>
-        <button onclick="aprovar('${docSnap.id}')">Aprovar</button>
-        <button onclick="recusar('${docSnap.id}')">Recusar</button>
+    totalDinheiro += j.valorPago || 0;
+    somaElo += j.elo || 1000;
+
+    if(j.pago){
+      pagos++;
+    } else {
+      naoPagos++;
+    }
+
+    if(!lider || j.pontos > lider.pontos){
+      lider = j;
+    }
+
+    listaHTML += `
+      <div class="card">
+        ${j.nome} <br>
+        Série: ${j.serie} <br>
+        Pago: ${j.pago ? "✅ Sim" : "🚫 Não"} <br>
+        Valor: R$ ${j.valorPago || 0} <br><br>
+        <button class="confirmar" onclick="confirmarPagamento('${docSnap.id}')">Confirmar Pagamento</button>
+        <button class="bloquear" onclick="bloquearPagamento('${docSnap.id}')">Bloquear</button>
       </div>
     `;
   });
 
-  document.getElementById("pendentes").innerHTML =
-    html || "<p>Nenhum resultado pendente.</p>";
+  document.getElementById("totalJogadores").innerText = total;
+  document.getElementById("totalArrecadado").innerText = "R$ " + totalDinheiro;
+  document.getElementById("totalPagos").innerText = pagos;
+  document.getElementById("totalNaoPagos").innerText = naoPagos;
+  document.getElementById("liderAtual").innerText = lider ? lider.nome : "-";
+  document.getElementById("mediaElo").innerText = total > 0 ? Math.round(somaElo / total) : 0;
+
+  document.getElementById("listaJogadores").innerHTML = listaHTML;
 }
 
-// ===============================
-// RECUSAR
-// ===============================
-window.recusar = async function(id){
-  await deleteDoc(doc(db,"resultadosPendentes",id));
-  carregarPendentes();
-};
+// 🔥 CONFIRMAR PAGAMENTO
+window.confirmarPagamento = async function(id){
+  const valor = prompt("Digite o valor pago:");
 
-// ===============================
-// LANÇAR RESULTADO
-// ===============================
-window.lancarResultado = async function(){
+  if(!valor) return;
 
-  const nome1 = document.getElementById("j1").value.trim();
-  const nome2 = document.getElementById("j2").value.trim();
-  const gols1 = parseInt(document.getElementById("g1").value);
-  const gols2 = parseInt(document.getElementById("g2").value);
-
-  if(!nome1 || !nome2 || isNaN(gols1) || isNaN(gols2)){
-    alert("Preencha todos os campos!");
-    return;
-  }
-
-  const jogadoresSnap = await getDocs(collection(db,"jogadores"));
-
-  let ref1, ref2, dados1, dados2;
-
-  jogadoresSnap.forEach(d=>{
-    const data = d.data();
-
-    if(data.nome === nome1){
-      ref1 = doc(db,"jogadores",d.id);
-      dados1 = data;
-    }
-
-    if(data.nome === nome2){
-      ref2 = doc(db,"jogadores",d.id);
-      dados2 = data;
-    }
+  await updateDoc(doc(db,"jogadores",id),{
+    pago: true,
+    valorPago: parseFloat(valor)
   });
 
-  if(!ref1 || !ref2){
-    alert("Jogador não encontrado!");
-    return;
-  }
-
-  if(!dados1.pago || !dados2.pago){
-    alert("🚫 Um dos jogadores não pagou a inscrição!");
-    return;
-  }
-
-  await atualizarEstatisticas(ref1, dados1, gols1, gols2);
-  await atualizarEstatisticas(ref2, dados2, gols2, gols1);
-
-  alert("✅ Resultado lançado com sucesso!");
+  alert("Pagamento confirmado!");
+  carregarDashboard();
 };
 
-// ===============================
-// APROVAR RESULTADO
-// ===============================
-window.aprovar = async function(id){
-
-  const docRef = doc(db,"resultadosPendentes",id);
-  const partidaSnap = await getDoc(docRef);
-
-  if(!partidaSnap.exists()){
-    alert("Partida não encontrada");
-    return;
-  }
-
-  const partida = partidaSnap.data();
-
-  const jogadoresSnap = await getDocs(collection(db,"jogadores"));
-
-  let ref1, ref2, dados1, dados2;
-
-  jogadoresSnap.forEach(d=>{
-    const data = d.data();
-
-    if(data.nome === partida.jogador1){
-      ref1 = doc(db,"jogadores",d.id);
-      dados1 = data;
-    }
-
-    if(data.nome === partida.jogador2){
-      ref2 = doc(db,"jogadores",d.id);
-      dados2 = data;
-    }
+// 🔥 BLOQUEAR PAGAMENTO
+window.bloquearPagamento = async function(id){
+  await updateDoc(doc(db,"jogadores",id),{
+    pago: false,
+    valorPago: 0
   });
 
-  if(!ref1 || !ref2){
-    alert("Jogadores não encontrados");
-    return;
-  }
-
-  if(!dados1.pago || !dados2.pago){
-    alert("🚫 Um dos jogadores não pagou a inscrição!");
-    return;
-  }
-
-  await atualizarEstatisticas(ref1, dados1, partida.gols1, partida.gols2);
-  await atualizarEstatisticas(ref2, dados2, partida.gols2, partida.gols1);
-
-  await deleteDoc(docRef);
-
-  alert("✅ Resultado aprovado!");
-  carregarPendentes();
+  alert("Jogador bloqueado!");
+  carregarDashboard();
 };
 
-// ===============================
-// ATUALIZA ESTATÍSTICAS
-// ===============================
-async function atualizarEstatisticas(ref, dados, golsPro, golsContra){
-
-  let pontos = 0;
-  let v = 0, e = 0, d = 0;
-
-  if(golsPro > golsContra){
-    pontos = 3;
-    v = 1;
-  }
-  else if(golsPro < golsContra){
-    d = 1;
-  }
-  else{
-    pontos = 1;
-    e = 1;
-  }
-
-  await updateDoc(ref,{
-    pontos: (dados.pontos || 0) + pontos,
-    golsPro: (dados.golsPro || 0) + golsPro,
-    golsContra: (dados.golsContra || 0) + golsContra,
-    vitorias: (dados.vitorias || 0) + v,
-    empates: (dados.empates || 0) + e,
-    derrotas: (dados.derrotas || 0) + d
-  });
-}
-
-carregarPendentes();
+carregarDashboard();
 
 </script>
 
