@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Resultados - Liga Online</title>
+
+<style>
+body{
+  background:#0f0f0f;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+}
+
+h1{ color:#00f2ff; }
+
+.card{
+  background:#1c1c1c;
+  padding:20px;
+  margin:30px auto;
+  width:350px;
+  border-radius:12px;
+}
+
+input{
+  padding:8px;
+  margin:5px;
+  border-radius:6px;
+  border:none;
+  width:80%;
+}
+
+button{
+  padding:10px 15px;
+  margin:5px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:bold;
+  background:#00f2ff;
+}
+
+.pendente{
+  background:#1c1c1c;
+  margin:10px auto;
+  padding:15px;
+  width:350px;
+  border-radius:8px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>⚽ Painel de Resultados</h1>
+
+<div class="card">
+  <input type="text" id="j1" placeholder="Jogador 1"><br>
+  <input type="number" id="g1" placeholder="Gols J1"><br>
+  <input type="text" id="j2" placeholder="Jogador 2"><br>
+  <input type="number" id="g2" placeholder="Gols J2"><br>
+  <button onclick="lancarResultado()">Lançar Resultado</button>
+</div>
+
+<h2>📋 Resultados Pendentes</h2>
+<div id="pendentes"></div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { 
+  getFirestore,
+  collection,
+  getDocs,
+  doc,
+  updateDoc,
+  deleteDoc,
+  addDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAgLb8XfVgjmOdyMWxdWKVOygMivU6TRM0",
+  authDomain: "liga-online-8f74d.firebaseapp.com",
+  projectId: "liga-online-8f74d",
+  appId: "1:815073531863:web:38dfaa7114fcda1b001d92"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+async function carregarPendentes(){
+  const snapshot = await getDocs(collection(db,"resultadosPendentes"));
+  let html = "";
+
+  snapshot.forEach(docSnap=>{
+    const p = docSnap.data();
+
+    html += `
+      <div class="pendente">
+        <strong>${p.jogador1}</strong> ${p.gols1} x ${p.gols2} <strong>${p.jogador2}</strong>
+        <br><br>
+        <button onclick="aprovar('${docSnap.id}')">Aprovar</button>
+        <button onclick="recusar('${docSnap.id}')">Recusar</button>
+      </div>
+    `;
+  });
+
+  document.getElementById("pendentes").innerHTML = html || "Nenhum pendente.";
+}
+
+window.recusar = async function(id){
+  await deleteDoc(doc(db,"resultadosPendentes",id));
+  carregarPendentes();
+};
+
+window.lancarResultado = async function(){
+
+  const nome1 = document.getElementById("j1").value.trim();
+  const nome2 = document.getElementById("j2").value.trim();
+  const gols1 = parseInt(document.getElementById("g1").value);
+  const gols2 = parseInt(document.getElementById("g2").value);
+
+  if(!nome1 || !nome2 || isNaN(gols1) || isNaN(gols2)){
+    alert("Preencha todos os campos!");
+    return;
+  }
+
+  const jogadoresSnap = await getDocs(collection(db,"jogadores"));
+
+  let ref1, ref2, dados1, dados2;
+
+  jogadoresSnap.forEach(d=>{
+    const data = d.data();
+
+    if(data.nome === nome1){
+      ref1 = doc(db,"jogadores",d.id);
+      dados1 = data;
+    }
+
+    if(data.nome === nome2){
+      ref2 = doc(db,"jogadores",d.id);
+      dados2 = data;
+    }
+  });
+
+  if(!ref1 || !ref2){
+    alert("Jogador não encontrado!");
+    return;
+  }
+
+  if(!dados1.pago || !dados2.pago){
+    alert("🚫 Um dos jogadores não pagou a inscrição!");
+    return;
+  }
+
+  await atualizarEstatisticas(ref1, dados1, gols1, gols2);
+  await atualizarEstatisticas(ref2, dados2, gols2, gols1);
+
+  alert("✅ Resultado lançado com sucesso!");
+};
+
+window.aprovar = async function(id){
+  const docRef = doc(db,"resultadosPendentes",id);
+  const snap = await getDocs(collection(db,"resultadosPendentes"));
+
+  let partida;
+
+  snap.forEach(d=>{
+    if(d.id === id){
+      partida = d.data();
+    }
+  });
+
+  if(!partida){
+    alert("Partida não encontrada");
+    return;
+  }
+
+  const jogadoresSnap = await getDocs(collection(db,"jogadores"));
+
+  let ref1, ref2, dados1, dados2;
+
+  jogadoresSnap.forEach(d=>{
+    const data = d.data();
+
+    if(data.nome === partida.jogador1){
+      ref1 = doc(db,"jogadores",d.id);
+      dados1 = data;
+    }
+
+    if(data.nome === partida.jogador2){
+      ref2 = doc(db,"jogadores",d.id);
+      dados2 = data;
+    }
+  });
+
+  if(!ref1 || !ref2){
+    alert("Jogadores não encontrados");
+    return;
+  }
+
+  if(!dados1.pago || !dados2.pago){
+    alert("🚫 Um dos jogadores não pagou a inscrição!");
+    return;
+  }
+
+  await atualizarEstatisticas(ref1, dados1, partida.gols1, partida.gols2);
+  await atualizarEstatisticas(ref2, dados2, partida.gols2, partida.gols1);
+
+  await deleteDoc(docRef);
+
+  alert("✅ Resultado aprovado!");
+  carregarPendentes();
+};
+
+// ===============================
+// 🔥 SISTEMA COMPLETO (ELO + MOEDAS)
+// ===============================
+async function atualizarEstatisticas(ref, dados, golsPro, golsContra){
+
+  let pontos = 0;
+  let v = 0, e = 0, d = 0;
+
+  if(golsPro > golsContra){
+    pontos = 3;
+    v = 1;
+  }
+  else if(golsPro < golsContra){
+    d = 1;
+  }
+  else{
+    pontos = 1;
+    e = 1;
+  }
+
+  let moedasGanhos = 2;
+
+  if(golsPro > golsContra){
+    moedasGanhos = 10;
+  }
+  else if(golsPro === golsContra){
+    moedasGanhos = 5;
+  }
+
+  const K = 30;
+  const eloAtual = dados.elo || 1000;
+
+  let resultado = 0.5;
+  if(golsPro > golsContra) resultado = 1;
+  if(golsPro < golsContra) resultado = 0;
+
+  const expectativa = 1 / (1 + Math.pow(10, (1000 - eloAtual)/400));
+  const novoElo = Math.round(eloAtual + K * (resultado - expectativa));
+
+  await updateDoc(ref,{
+    pontos: (dados.pontos || 0) + pontos,
+    golsPro: (dados.golsPro || 0) + golsPro,
+    golsContra: (dados.golsContra || 0) + golsContra,
+    vitorias: (dados.vitorias || 0) + v,
+    empates: (dados.empates || 0) + e,
+    derrotas: (dados.derrotas || 0) + d,
+    elo: novoElo,
+    moedas: (dados.moedas || 0) + moedasGanhos
+  });
+}
+
+carregarPendentes();
+
+</script>
+
+</body>
+</html>
