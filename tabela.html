@@ -82,75 +82,102 @@ tr:hover{
 
 <a href="index.html" class="voltar">Voltar</a>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, onSnapshot } 
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-const dados = {
-  A: [
-    {nome:"TCRUZ", pts:18, gp:15, gc:5},
-    {nome:"PLAYER2", pts:15, gp:12, gc:6},
-    {nome:"PLAYER3", pts:12, gp:10, gc:8},
-    {nome:"PLAYER4", pts:9, gp:9, gc:9},
-    {nome:"PLAYER5", pts:6, gp:7, gc:12},
-    {nome:"PLAYER6", pts:3, gp:5, gc:15}
-  ],
-  B: [
-    {nome:"GAMER1", pts:16, gp:14, gc:7},
-    {nome:"GAMER2", pts:13, gp:11, gc:9},
-    {nome:"GAMER3", pts:10, gp:9, gc:10},
-    {nome:"GAMER4", pts:7, gp:6, gc:11},
-    {nome:"GAMER5", pts:4, gp:5, gc:13},
-    {nome:"GAMER6", pts:2, gp:4, gc:15}
-  ],
-  C: [
-    {nome:"NEW1", pts:14, gp:13, gc:6},
-    {nome:"NEW2", pts:11, gp:10, gc:8},
-    {nome:"NEW3", pts:8, gp:8, gc:9},
-    {nome:"NEW4", pts:6, gp:6, gc:12},
-    {nome:"NEW5", pts:3, gp:4, gc:14},
-    {nome:"NEW6", pts:1, gp:3, gc:16}
-  ]
+const firebaseConfig = {
+  apiKey: "AIzaSyAgLb8XfVgjmOdyMWxdWKVOygMivU6TRM0",
+  authDomain: "liga-online-8f74d.firebaseapp.com",
+  projectId: "liga-online-8f74d",
+  appId: "1:815073531863:web:38dfaa7114fcda1b001d92"
 };
 
-function carregarTabela(){
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-  const serie = document.getElementById("serieSelect").value;
-  const jogadores = dados[serie];
+const container = document.getElementById("tabelaContainer");
+const selectSerie = document.getElementById("serieSelect");
 
-  jogadores.sort((a,b)=> b.pts - a.pts);
+let todosJogadores = [];
 
-  let html = "<table>";
-  html += "<tr><th>#</th><th>Jogador</th><th>PTS</th><th>GP</th><th>GC</th></tr>";
+// 🔥 Listener único em tempo real
+onSnapshot(collection(db,"jogadores"), (snapshot)=>{
+  todosJogadores = [];
+  snapshot.forEach(doc=>{
+    todosJogadores.push(doc.data());
+  });
 
-  jogadores.forEach((j, index)=>{
+  renderTabela();
+});
+
+window.carregarTabela = function(){
+  renderTabela();
+};
+
+function renderTabela(){
+
+  const serieSelecionada = selectSerie.value;
+
+  let jogadores = todosJogadores.filter(j=> j.serie === serieSelecionada);
+
+  jogadores.sort((a,b)=>{
+    if(b.pontos !== a.pontos){
+      return b.pontos - a.pontos;
+    }
+
+    const saldoA = a.golsPro - a.golsContra;
+    const saldoB = b.golsPro - b.golsContra;
+
+    if(saldoB !== saldoA){
+      return saldoB - saldoA;
+    }
+
+    return b.golsPro - a.golsPro;
+  });
+
+  let html = `
+    <table>
+      <tr>
+        <th>#</th>
+        <th>Nome</th>
+        <th>Pts</th>
+        <th>GP</th>
+        <th>GC</th>
+        <th>SG</th>
+      </tr>
+  `;
+
+  jogadores.forEach((j,index)=>{
+
+    const saldo = j.golsPro - j.golsContra;
 
     let classe = "";
 
-    if(index === 0) classe = "lider";
-    if(index >= jogadores.length-2) classe = "rebaixamento";
+    if(index === 0){
+      classe = "lider";
+    }
+
+    if(index >= jogadores.length - 2){
+      classe = "rebaixamento";
+    }
 
     html += `
       <tr class="${classe}">
         <td>${index+1}</td>
-        <td>
-  <a href="perfil.html?nome=${j.nome}" style="color:#00f2ff; text-decoration:none;">
-    ${j.nome}
-  </a>
-</td>
-        <td>${j.pts}</td>
-        <td>${j.gp}</td>
-        <td>${j.gc}</td>
+        <td>${j.nome}</td>
+        <td>${j.pontos}</td>
+        <td>${j.golsPro}</td>
+        <td>${j.golsContra}</td>
+        <td>${saldo}</td>
       </tr>
     `;
   });
 
   html += "</table>";
 
-  document.getElementById("tabelaContainer").innerHTML = html;
+  container.innerHTML = html;
 }
 
-carregarTabela();
-
 </script>
-
-</body>
-</html>
