@@ -58,33 +58,20 @@ button{
 <button onclick="encerrarTemporada()">Encerrar Temporada</button>
 
 <script type="module">
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc } 
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-async function carregarPendentes(){
 
-  const snapshot = await getDocs(collection(db,"resultadosPendentes"));
+const firebaseConfig = {
+  apiKey: "AIzaSyAgLb8XfVgjmOdyMWxdWKVOygMivU6TRM0",
+  authDomain: "liga-online-8f74d.firebaseapp.com",
+  projectId: "liga-online-8f74d",
+  appId: "1:815073531863:web:38dfaa7114fcda1b001d92"
+};
 
-  let html = "";
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-  snapshot.forEach(docSnap=>{
-    const p = docSnap.data();
-
-    html += `
-      <div style="margin:10px;">
-        ${p.jogador1} ${p.gols1} x ${p.gols2} ${p.jogador2}
-        <br>
-        <button onclick="aprovar('${docSnap.id}')">Aprovar</button>
-        <button onclick="recusar('${docSnap.id}')">Recusar</button>
-      </div>
-    `;
-  });
-
-  document.getElementById("pendentes").innerHTML = html;
-}
-
-carregarPendentes();
 // ===============================
 // CARREGAR RESULTADOS PENDENTES
 // ===============================
@@ -101,7 +88,6 @@ async function carregarPendentes(){
       <div style="margin:10px;">
         ${p.jogador1} ${p.gols1} x ${p.gols2} ${p.jogador2}
         <br>
-        <button onclick="aprovar('${docSnap.id}')">Aprovar</button>
         <button onclick="recusar('${docSnap.id}')">Recusar</button>
       </div>
     `;
@@ -110,23 +96,10 @@ async function carregarPendentes(){
   document.getElementById("pendentes").innerHTML = html;
 }
 
-carregarPendentes();
 window.recusar = async function(id){
   await deleteDoc(doc(db,"resultadosPendentes",id));
   carregarPendentes();
 }
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAgLb8XfVgjmOdyMWxdWKVOygMivU6TRM0",
-  authDomain: "liga-online-8f74d.firebaseapp.com",
-  projectId: "liga-online-8f74d",
-  storageBucket: "liga-online-8f74d.firebasestorage.app",
-  messagingSenderId: "815073531863",
-  appId: "1:815073531863:web:38dfaa7114fcda1b001d92"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 
 // ===============================
 // LANÇAR RESULTADO
@@ -184,14 +157,10 @@ window.lancarResultado = async function(){
 
   alert("Resultado lançado com sucesso!");
 }
-<h2>Resultados Pendentes</h2>
-<div id="pendentes"></div>
+
 // ===============================
 // ENCERRAR TEMPORADA
 // ===============================
-  <h2>📋 Resultados Pendentes</h2>
-<div id="pendentes"></div>
-
 window.encerrarTemporada = async function(){
 
   const snapshot = await getDocs(collection(db, "jogadores"));
@@ -243,9 +212,8 @@ window.encerrarTemporada = async function(){
     });
   }
 
-  alert("🏆 Temporada encerrada! Promoções e rebaixamentos aplicados.");
+  alert("🏆 Temporada encerrada!");
 }
-</script>
 
-</body>
-</html>
+carregarPendentes();
+
