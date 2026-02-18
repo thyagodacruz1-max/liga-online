@@ -98,8 +98,7 @@ async function carregarPendentes(){
   document.getElementById("pendentes").innerHTML = html;
 }
 
-window.recusar = async function(id){
-  // ===============================
+// ===============================
 // RECUSAR RESULTADO
 // ===============================
 window.recusar = async function(id){
@@ -187,10 +186,6 @@ window.aprovar = async function(id){
   alert("✅ Resultado aprovado!");
   carregarPendentes();
 };
-
-  await deleteDoc(doc(db,"resultadosPendentes",id));
-  carregarPendentes();
-}
 
 // ===============================
 // LANÇAR RESULTADO
