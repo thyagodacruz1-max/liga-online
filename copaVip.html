@@ -2,83 +2,74 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Copa VIP - Liga Online</title>
+<title>Copa VIP - Champions Mode</title>
 
 <style>
 body{
-  background:#0f0f0f;
+  background:#0b0b0f;
   color:white;
   font-family:Arial;
   text-align:center;
   margin:0;
 }
 
-.menu{
-  background:#000;
-  padding:15px;
-  border-bottom:2px solid gold;
-}
-
-.menu button{
-  margin:5px;
-  padding:8px 12px;
-  background:gold;
-  border:none;
-  border-radius:6px;
-  font-weight:bold;
-  cursor:pointer;
-}
-
 h1{
   color:gold;
 }
 
-.fase{
-  margin:40px auto;
+button{
+  padding:6px 12px;
+  margin:5px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.gerar{
+  background:gold;
+  color:black;
 }
 
 .card{
   background:#1c1c1c;
   padding:15px;
   margin:10px auto;
-  width:300px;
+  width:320px;
   border-radius:10px;
   border:1px solid gold;
 }
-button{
-  padding:6px 12px;
-  margin-top:15px;
+
+.fase{
+  margin:30px 0;
+}
+
+.vencedor{
   background:gold;
-  border:none;
-  border-radius:6px;
+  color:black;
   font-weight:bold;
-  cursor:pointer;
 }
 </style>
 </head>
-
 <body>
 
-<div class="menu">
-  <a href="index.html"><button>🏆 Classificação</button></a>
-  <a href="planoVip.html"><button>💎 Plano VIP</button></a>
-</div>
+<h1>🏆 Copa VIP - Champions League</h1>
+<h3>Premiação: 🪙 +100 moedas</h3>
 
-<h1>🏆 Copa VIP Oficial</h1>
-<h3>Premiação: 💰 R$ 250,00</h3>
+<button class="gerar" onclick="gerarCopa()">🔥 Gerar Copa</button>
 
-<button onclick="gerarChaveamento()">🔥 Gerar Chaveamento</button>
-
-<div id="chaveamento"></div>
+<div id="copa"></div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { 
+import {
   getFirestore,
   collection,
-  getDocs
+  getDocs,
+  doc,
+  updateDoc,
+  addDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -91,61 +82,141 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-window.gerarChaveamento = async function(){
+let quartas = [];
+let semis = [];
+let final = [];
+
+window.gerarCopa = async function(){
 
   const snapshot = await getDocs(collection(db,"jogadores"));
-
   let vips = [];
 
-  snapshot.forEach(doc=>{
-    const j = doc.data();
+  snapshot.forEach(docSnap=>{
+    const j = docSnap.data();
     if(j.vip === true){
       vips.push(j.nome);
     }
   });
 
   if(vips.length < 4){
-    alert("Mínimo 4 VIPs para gerar Copa.");
+    alert("Mínimo 4 VIPs.");
     return;
   }
 
-  // Embaralhar
-  vips.sort(()=> Math.random() - 0.5);
+  vips.sort(()=>Math.random()-0.5);
 
-  let html = "";
+  quartas = [];
 
-  html += `<div class="fase"><h2>🔥 Quartas de Final</h2>`;
-
-  for(let i=0; i<vips.length; i+=2){
+  for(let i=0;i<vips.length;i+=2){
     if(vips[i+1]){
-      html += `
-        <div class="card">
-          ${vips[i]} 🆚 ${vips[i+1]}
-        </div>
-      `;
+      quartas.push([vips[i],vips[i+1]]);
     }
   }
 
-  html += "</div>";
+  renderCopa();
+}
 
-  html += `
-    <div class="fase">
-      <h2>⚔️ Semifinal</h2>
-      <div class="card">Vencedor Jogo 1 🆚 Vencedor Jogo 2</div>
-      <div class="card">Vencedor Jogo 3 🆚 Vencedor Jogo 4</div>
-    </div>
-  `;
+function renderCopa(){
 
-  html += `
-    <div class="fase">
-      <h2>🏆 Final</h2>
-      <div class="card">Vencedor Semi 1 🆚 Vencedor Semi 2</div>
-    </div>
-  `;
+  let html = "";
 
-  document.getElementById("chaveamento").innerHTML = html;
+  html += `<div class="fase"><h2>🔥 Quartas</h2>`;
+  quartas.forEach((jogo,i)=>{
+    html += `
+      <div class="card">
+        ${jogo[0]} 🆚 ${jogo[1]} <br><br>
+        <button onclick="vencerQuartas(${i},0)">${jogo[0]}</button>
+        <button onclick="vencerQuartas(${i},1)">${jogo[1]}</button>
+      </div>
+    `;
+  });
+  html += `</div>`;
 
-};
+  if(semis.length > 0){
+    html += `<div class="fase"><h2>⚔️ Semifinal</h2>`;
+    semis.forEach((jogo,i)=>{
+      html += `
+        <div class="card">
+          ${jogo[0]} 🆚 ${jogo[1]} <br><br>
+          <button onclick="vencerSemi(${i},0)">${jogo[0]}</button>
+          <button onclick="vencerSemi(${i},1)">${jogo[1]}</button>
+        </div>
+      `;
+    });
+    html += `</div>`;
+  }
+
+  if(final.length === 2){
+    html += `
+      <div class="fase">
+        <h2>🏆 Final</h2>
+        <div class="card">
+          ${final[0]} 🆚 ${final[1]} <br><br>
+          <button onclick="vencerFinal(0)">${final[0]}</button>
+          <button onclick="vencerFinal(1)">${final[1]}</button>
+        </div>
+      </div>
+    `;
+  }
+
+  document.getElementById("copa").innerHTML = html;
+}
+
+window.vencerQuartas = function(i,pos){
+  const vencedor = quartas[i][pos];
+  semis.push(vencedor);
+
+  if(semis.length % 2 === 0){
+    semis = chunkArray(semis,2);
+  }
+
+  renderCopa();
+}
+
+window.vencerSemi = function(i,pos){
+  const vencedor = semis[i][pos];
+  final.push(vencedor);
+  renderCopa();
+}
+
+window.vencerFinal = async function(pos){
+
+  const campeao = final[pos];
+
+  const snapshot = await getDocs(collection(db,"jogadores"));
+
+  snapshot.forEach(async docSnap=>{
+    const j = docSnap.data();
+    if(j.nome === campeao){
+
+      await updateDoc(doc(db,"jogadores",docSnap.id),{
+        moedas:(j.moedas||0)+100,
+        titulos:(j.titulos||0)+1
+      });
+
+      await addDoc(collection(db,"campeoesVip"),{
+        nome:campeao,
+        data:new Date()
+      });
+
+    }
+  });
+
+  alert("🏆 Campeão definido! +100 moedas e título registrado.");
+
+  final = [];
+  semis = [];
+  quartas = [];
+  renderCopa();
+}
+
+function chunkArray(arr, size) {
+  const result = [];
+  for (let i = 0; i < arr.length; i += size) {
+    result.push(arr.slice(i, i + size));
+  }
+  return result;
+}
 
 </script>
 
