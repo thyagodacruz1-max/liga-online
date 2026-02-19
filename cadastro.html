@@ -88,7 +88,8 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const limite = 12;
+/* 🔥 LIMITE ALTERADO PARA TESTE */
+const limite = 100;
 
 const valores = {
   A: 15,
@@ -104,8 +105,17 @@ onSnapshot(collection(db,"jogadores"), snapshot=>{
 
   snapshot.forEach(docSnap=>{
     const j = docSnap.data();
-    if(j.serie) contagem[j.serie]++;
+
+    if(j.serie){
+      const serieLimpa = j.serie.toString().trim().toUpperCase();
+
+      if(contagem.hasOwnProperty(serieLimpa)){
+        contagem[serieLimpa]++;
+      }
+    }
   });
+
+  console.log("Contagem atual:", contagem);
 
   atualizarTela();
 });
