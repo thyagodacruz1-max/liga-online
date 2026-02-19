@@ -76,12 +76,12 @@ window.enviar = async function(){
     return;
   }
 
-  // Buscar jogador 1
+  // 🔎 Buscar jogador 1
   const q1 = query(collection(db,"jogadores"), where("nome","==",nome1));
   const snap1 = await getDocs(q1);
   if(snap1.empty){ alert("Jogador 1 não encontrado."); return; }
 
-  // Buscar jogador 2
+  // 🔎 Buscar jogador 2
   const q2 = query(collection(db,"jogadores"), where("nome","==",nome2));
   const snap2 = await getDocs(q2);
   if(snap2.empty){ alert("Jogador 2 não encontrado."); return; }
@@ -107,7 +107,7 @@ window.enviar = async function(){
   let moedas1 = j1.moedas || 0;
   let moedas2 = j2.moedas || 0;
 
-  // Moedas por gol
+  // 💰 +1 moeda por gol
   moedas1 += gols1;
   moedas2 += gols2;
 
@@ -130,9 +130,9 @@ window.enviar = async function(){
     empates2 += 1;
   }
 
-  // Histórico automático
-  let historico1 = j1.historicoPontos || [];
-  let historico2 = j2.historicoPontos || [];
+  // 🔥 HISTÓRICO PROFISSIONAL (COMEÇA EM 0)
+  let historico1 = j1.historicoPontos || [0];
+  let historico2 = j2.historicoPontos || [0];
 
   historico1.push(pontos1);
   historico2.push(pontos2);
@@ -166,3 +166,4 @@ window.enviar = async function(){
 </script>
 </body>
 </html>
+
