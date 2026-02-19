@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Admin VIP - Liga Online</title>
+
+<style>
+body{
+  background:#0f0f0f;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+  padding:30px;
+}
+
+h1{
+  color:#00f2ff;
+}
+
+.card{
+  background:#1c1c1c;
+  padding:20px;
+  margin:20px auto;
+  width:350px;
+  border-radius:12px;
+}
+
+button{
+  padding:8px 12px;
+  margin:5px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.aprovar{
+  background:#00f2ff;
+  color:black;
+}
+
+</style>
+</head>
+<body>
+
+<h1>💎 Aprovação de VIP</h1>
+
+<div id="listaSolicitacoes"></div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { 
+  getFirestore,
+  collection,
+  onSnapshot,
+  doc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  getDocs
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAgLb8XfVgjmOdyMWxdWKVOygMivU6TRM0",
+  authDomain: "liga-online-8f74d.firebaseapp.com",
+  projectId: "liga-online-8f74d",
+  appId: "1:815073531863:web:625fe25cfe74e705001d92"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+onSnapshot(collection(db,"vipSolicitacoes"), snapshot=>{
+
+  let html="";
+
+  snapshot.forEach(docSnap=>{
+    const dados = docSnap.data();
+
+    if(dados.status === "pendente"){
+      html += `
+        <div class="card">
+          <h3>${dados.nome}</h3>
+          <button class="aprovar"
+            onclick="aprovarVIP('${docSnap.id}','${dados.nome}')">
+            Aprovar VIP
+          </button>
+        </div>
+      `;
+    }
+  });
+
+  document.getElementById("listaSolicitacoes").innerHTML = html;
+});
+
+window.aprovarVIP = async function(idSolicitacao, nome){
+
+  // 🔎 Buscar jogador pelo nome
+  const q = query(collection(db,"jogadores"), where("nome","==",nome));
+  const snap = await getDocs(q);
+
+  if(snap.empty){
+    alert("Jogador não encontrado.");
+    return;
+  }
+
+  const jogadorDoc = snap.docs[0];
+  const jogador = jogadorDoc.data();
+
+  // 💰 BÔNUS VIP AUTOMÁTICO (50 moedas)
+  const bonus = 50;
+  const moedasAtuais = jogador.moedas || 0;
+
+  await updateDoc(doc(db,"jogadores",jogadorDoc.id),{
+    vip:true,
+    moedas: moedasAtuais + bonus
+  });
+
+  // 🗑️ Remover solicitação
+  await deleteDoc(doc(db,"vipSolicitacoes",idSolicitacao));
+
+  alert("VIP ativado com bônus de 50 moedas!");
+};
+
+</script>
+
+</body>
+</html>
