@@ -80,6 +80,8 @@ button.vip{
   <br><br>
 
   <button class="vip" onclick="ativarVIP()">Ativar VIP</button>
+
+  <p id="statusMsg" style="margin-top:15px;"></p>
 </div>
 
 <script type="module">
@@ -129,12 +131,28 @@ window.ativarVIP = async function(){
 
   const id = document.getElementById("jogadorSelect").value;
 
+  const jogador = jogadores.find(j => j.id === id);
+
+  if(jogador.vip){
+    document.getElementById("statusMsg").innerHTML =
+      "⚠️ Jogador já é VIP!";
+    return;
+  }
+
+  const agora = new Date();
+  const expira = new Date();
+  expira.setDate(agora.getDate() + 30);
+
   await updateDoc(doc(db,"jogadores",id),{
     vip:true,
-    vipPago:true
+    vipPago:true,
+    vipAtivadoEm: agora,
+    vipExpiraEm: expira
   });
 
-  alert("💎 VIP ativado! Jogador liberado para Copa VIP.");
+  document.getElementById("statusMsg").innerHTML =
+    "💎 VIP ativado com validade de 30 dias!";
+
 };
 
 </script>
