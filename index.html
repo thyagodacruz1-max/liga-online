@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Classificação Oficial - Liga Online</title>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
 body{
   background:#0f0f0f;
@@ -14,13 +12,26 @@ body{
   font-family:Arial;
   text-align:center;
   margin:0;
-  padding:0;
+}
+
+.menu{
+  background:#000;
+  padding:15px;
+  border-bottom:2px solid #00f2ff;
+}
+
+.menu button{
+  margin:5px;
+  padding:8px 12px;
+  background:#00f2ff;
+  border:none;
+  border-radius:6px;
+  font-weight:bold;
+  cursor:pointer;
 }
 
 header{
-  background:#000;
   padding:20px;
-  border-bottom:2px solid #00f2ff;
 }
 
 h1{
@@ -29,7 +40,7 @@ h1{
 }
 
 h2{
-  margin-top:50px;
+  margin-top:40px;
   color:#00f2ff;
 }
 
@@ -50,51 +61,28 @@ h2{
   padding:8px;
   border-bottom:1px solid #333;
 }
-
-button{
-  padding:6px 10px;
-  background:#00f2ff;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
-  font-weight:bold;
-}
-
-#modal{
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:rgba(0,0,0,0.85);
-  backdrop-filter:blur(5px);
-  display:none;
-  justify-content:center;
-  align-items:center;
-  flex-direction:column;
-  animation:fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn{
-  from{ opacity:0; }
-  to{ opacity:1; }
-}
-
-.modal-content{
-  background:#111;
-  padding:30px;
-  border-radius:12px;
-}
-
-canvas{
-  background:#000;
-  padding:20px;
-  border-radius:10px;
-}
 </style>
 </head>
 
 <body>
+
+<div class="menu">
+  <a href="index.html">
+    <button>🏆 Classificação</button>
+  </a>
+
+  <a href="admin.html">
+    <button>⚙️ Admin</button>
+  </a>
+
+  <a href="enviar.html">
+    <button>📤 Registrar</button>
+  </a>
+
+  <a href="rankingGeral.html">
+    <button>🌎 Ranking</button>
+  </a>
+</div>
 
 <header>
   <h1>🏆 Liga Online - Classificação Oficial</h1>
@@ -103,15 +91,6 @@ canvas{
 <div id="serieA"></div>
 <div id="serieB"></div>
 <div id="serieC"></div>
-
-<div id="modal" onclick="fecharGrafico(event)">
-  <div class="modal-content" onclick="event.stopPropagation()">
-    <h2 id="tituloGrafico"></h2>
-    <canvas id="grafico" width="400" height="250"></canvas>
-    <br><br>
-    <button onclick="fecharGrafico()">Fechar</button>
-  </div>
-</div>
 
 <script type="module">
 
@@ -133,12 +112,16 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let jogadoresGlobal = [];
-let graficoAtual = null;
 
 onSnapshot(collection(db,"jogadores"), snapshot=>{
+  
   jogadoresGlobal = [];
+
   snapshot.forEach(docSnap=>{
-    jogadoresGlobal.push(docSnap.data());
+    jogadoresGlobal.push({
+      id: docSnap.id,
+      ...docSnap.data()
+    });
   });
 
   montarTabela("A");
@@ -157,18 +140,27 @@ function montarTabela(serie){
     });
 
   let html = `<h2>🏅 Série ${serie}</h2>`;
+
+  if(jogadoresSerie.length === 0){
+    html += "<p>Nenhum jogador nesta série.</p>";
+    document.getElementById("serie"+serie).innerHTML = html;
+    return;
+  }
+
   html += `
     <table class="tabela">
       <tr>
         <th>#</th>
         <th>Nome</th>
         <th>Pts</th>
-        <th>V</th>
-        <th>Gráfico</th>
+        <th>Vitórias</th>
+        <th>Saldo</th>
       </tr>
   `;
 
   jogadoresSerie.forEach((j, index)=>{
+
+    const saldo = (j.golsPro||0) - (j.golsContra||0);
 
     html += `
       <tr>
@@ -176,62 +168,17 @@ function montarTabela(serie){
         <td>${j.nome}</td>
         <td>${j.pontos||0}</td>
         <td>${j.vitorias||0}</td>
-        <td>
-          <button onclick="mostrarGrafico('${j.nome}', ${j.pontos||0})">
-            📈 Ver
-          </button>
-        </td>
+        <td>${saldo}</td>
       </tr>
     `;
   });
 
   html += "</table>";
+
   document.getElementById("serie"+serie).innerHTML = html;
-}
-
-window.mostrarGrafico = function(nome, pontos){
-
-  document.getElementById("modal").style.display = "flex";
-  document.getElementById("tituloGrafico").innerText = "Evolução - " + nome;
-
-  const ctx = document.getElementById("grafico").getContext("2d");
-
-  // 🔥 DESTRUIR GRÁFICO ANTERIOR
-  if(graficoAtual){
-    graficoAtual.destroy();
-  }
-
-  graficoAtual = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: ['Início', 'Rodada 3', 'Rodada 6', 'Rodada 9', 'Atual'],
-      datasets: [{
-        label: 'Pontos',
-        data: [0, pontos*0.3, pontos*0.6, pontos*0.8, pontos],
-        borderColor: '#00f2ff',
-        backgroundColor: '#00f2ff',
-        tension: 0.3
-      }]
-    },
-    options: {
-      responsive:true,
-      plugins:{
-        legend:{ labels:{ color:'white' } }
-      },
-      scales:{
-        x:{ ticks:{ color:'white' } },
-        y:{ ticks:{ color:'white' } }
-      }
-    }
-  });
-}
-
-window.fecharGrafico = function(){
-  document.getElementById("modal").style.display = "none";
 }
 
 </script>
 
 </body>
 </html>
-
