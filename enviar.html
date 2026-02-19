@@ -10,6 +10,18 @@ body{
   color:white;
   text-align:center;
   font-family:Arial;
+  margin:0;
+  padding:0;
+}
+
+.menu{
+  background:#000;
+  padding:15px;
+  border-bottom:2px solid #00f2ff;
+}
+
+.menu button{
+  margin:5px;
 }
 
 input{
@@ -30,6 +42,16 @@ button{
 </style>
 </head>
 <body>
+
+<div class="menu">
+  <a href="index.html">
+    <button>🏠 Classificação</button>
+  </a>
+
+  <a href="admin.html">
+    <button>⚙️ Admin</button>
+  </a>
+</div>
 
 <h2>📤 Registrar Resultado</h2>
 
@@ -76,12 +98,10 @@ window.enviar = async function(){
     return;
   }
 
-  // 🔎 Buscar jogador 1
   const q1 = query(collection(db,"jogadores"), where("nome","==",nome1));
   const snap1 = await getDocs(q1);
   if(snap1.empty){ alert("Jogador 1 não encontrado."); return; }
 
-  // 🔎 Buscar jogador 2
   const q2 = query(collection(db,"jogadores"), where("nome","==",nome2));
   const snap2 = await getDocs(q2);
   if(snap2.empty){ alert("Jogador 2 não encontrado."); return; }
@@ -107,7 +127,6 @@ window.enviar = async function(){
   let moedas1 = j1.moedas || 0;
   let moedas2 = j2.moedas || 0;
 
-  // 💰 +1 moeda por gol
   moedas1 += gols1;
   moedas2 += gols2;
 
@@ -130,7 +149,6 @@ window.enviar = async function(){
     empates2 += 1;
   }
 
-  // 🔥 HISTÓRICO PROFISSIONAL (COMEÇA EM 0)
   let historico1 = j1.historicoPontos || [0];
   let historico2 = j2.historicoPontos || [0];
 
@@ -166,4 +184,3 @@ window.enviar = async function(){
 </script>
 </body>
 </html>
-
