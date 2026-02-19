@@ -9,7 +9,30 @@ body{
   background:#0f0f0f;
   color:white;
   font-family:Arial;
+  margin:0;
   padding:20px;
+}
+
+header{
+  background:#000;
+  padding:15px;
+  text-align:center;
+  border-bottom:2px solid #ff4444;
+}
+
+.menu{
+  text-align:center;
+  margin:15px 0;
+}
+
+.menu button{
+  padding:8px 12px;
+  margin:5px;
+  border:none;
+  border-radius:6px;
+  font-weight:bold;
+  cursor:pointer;
+  background:#00f2ff;
 }
 
 h1{
@@ -20,9 +43,17 @@ h1{
 .card{
   background:#1c1c1c;
   padding:15px;
-  margin:15px 0;
+  margin:15px auto;
   border-radius:8px;
+  max-width:700px;
 }
+
+.status{
+  font-weight:bold;
+}
+
+.pendente{ color:orange; }
+.resolvido{ color:lightgreen; }
 
 button{
   padding:6px 10px;
@@ -42,7 +73,17 @@ button{
 </head>
 <body>
 
-<h1>🚨 Painel de Denúncias</h1>
+<header>
+  🚨 Painel de Moderação
+</header>
+
+<div class="menu">
+  <a href="admin.html"><button>⚙️ Admin</button></a>
+  <a href="index.html"><button>🏆 Classificação</button></a>
+  <button onclick="logout()">🚪 Sair</button>
+</div>
+
+<h1>Denúncias Registradas</h1>
 
 <div id="listaDenuncias"></div>
 
@@ -56,11 +97,14 @@ import {
   doc,
   updateDoc,
   deleteDoc,
-  getDoc
+  getDoc,
+  query,
+  orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
   getAuth,
-  onAuthStateChanged
+  onAuthStateChanged,
+  signOut
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -74,14 +118,35 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// 🔐 PROTEGER ROTA (apenas admin)
-onAuthStateChanged(auth, user=>{
+// 🔐 PROTEGER ROTA + VERIFICAR CARGO
+onAuthStateChanged(auth, async user=>{
   if(!user){
+    window.location.href="login.html";
+    return;
+  }
+
+  const cargoDoc = await getDoc(doc(db,"usuarios",user.uid));
+
+  if(!cargoDoc.exists()){
+    window.location.href="login.html";
+    return;
+  }
+
+  const cargo = cargoDoc.data().cargo;
+
+  if(cargo !== "admin" && cargo !== "moderador"){
+    alert("Sem permissão.");
     window.location.href="login.html";
   }
 });
 
-onSnapshot(collection(db,"denuncias"), async snapshot=>{
+// 🔥 LISTAR DENÚNCIAS
+const denunciasRef = query(
+  collection(db,"denuncias"),
+  orderBy("data","desc")
+);
+
+onSnapshot(denunciasRef, async snapshot=>{
 
   const container=document.getElementById("listaDenuncias");
   container.innerHTML="";
@@ -91,27 +156,40 @@ onSnapshot(collection(db,"denuncias"), async snapshot=>{
     const denuncia=docSnap.data();
 
     const mensagemDoc=await getDoc(doc(db,"chatGlobal",denuncia.mensagemId));
-    const textoMensagem=mensagemDoc.exists() ? mensagemDoc.data().texto : "Mensagem já removida";
+    const textoMensagem=mensagemDoc.exists()
+      ? mensagemDoc.data().texto
+      : "Mensagem já removida";
+
+    const classeStatus = denuncia.status === "resolvido"
+      ? "resolvido"
+      : "pendente";
 
     container.innerHTML+=`
       <div class="card">
         <strong>Mensagem:</strong> ${textoMensagem}<br>
         <strong>Denunciado UID:</strong> ${denuncia.denunciado}<br>
-        <strong>Status:</strong> ${denuncia.status}<br>
+        <strong>Status:</strong>
+        <span class="status ${classeStatus}">
+          ${denuncia.status || "pendente"}
+        </span><br>
 
-        <button class="remover" onclick="removerMensagem('${denuncia.mensagemId}')">
+        <button class="remover"
+          onclick="removerMensagem('${denuncia.mensagemId}')">
           🗑 Remover Mensagem
         </button>
 
-        <button class="mute" onclick="mutarJogador('${denuncia.denunciado}')">
+        <button class="mute"
+          onclick="mutarJogador('${denuncia.denunciado}')">
           🔇 Mutar 24h
         </button>
 
-        <button class="ban" onclick="banirJogador('${denuncia.denunciado}')">
+        <button class="ban"
+          onclick="banirJogador('${denuncia.denunciado}')">
           ⛔ Banir
         </button>
 
-        <button class="resolver" onclick="resolver('${docSnap.id}')">
+        <button class="resolver"
+          onclick="resolver('${docSnap.id}')">
           ✅ Marcar Resolvido
         </button>
       </div>
@@ -149,12 +227,18 @@ window.banirJogador = async function(uid){
   alert("Jogador banido.");
 };
 
-// ✅ RESOLVER DENÚNCIA
+// ✅ RESOLVER
 window.resolver = async function(id){
   await updateDoc(doc(db,"denuncias",id),{
     status:"resolvido"
   });
   alert("Denúncia marcada como resolvida.");
+};
+
+// 🚪 LOGOUT
+window.logout = function(){
+  signOut(auth);
+  window.location.href="login.html";
 };
 
 </script>
