@@ -19,6 +19,11 @@ body{
   border-radius:12px;
   max-width:400px;
   margin:auto;
+  box-shadow:0 0 20px rgba(0,242,255,0.3);
+}
+
+h2{
+  color:#00f2ff;
 }
 
 button{
@@ -33,10 +38,12 @@ button{
 
 .pix{
   background:#111;
-  padding:10px;
-  border-radius:6px;
-  margin:10px 0;
+  padding:12px;
+  border-radius:8px;
+  margin:15px 0;
+  font-weight:bold;
   word-break:break-all;
+  border:1px solid #00f2ff;
 }
 </style>
 </head>
@@ -44,25 +51,30 @@ button{
 
 <div class="card">
 
-<h2>💎 Plano VIP</h2>
+<h2>💎 Plano VIP - Liga Online</h2>
 
-<p>Valor: <strong>R$ 25,00</strong></p>
+<p><strong>Valor: R$ 25,00</strong></p>
 
-<p>Benefícios:</p>
+<hr style="border:1px solid #333;">
+
+<p><strong>Benefícios VIP:</strong></p>
 <p>✔ Acesso à Copa VIP</p>
-<p>✔ Bônus de moedas</p>
+<p>✔ Bônus de moedas por vitória</p>
 <p>✔ Nome com destaque 💎</p>
+<p>✔ Prioridade em campeonatos</p>
 
-<h3>📲 Chave PIX (E-mail)</h3>
+<hr style="border:1px solid #333;">
+
+<h3>📲 Pague via PIX</h3>
 
 <div class="pix" id="pixKey">
-seuemail@email.com
+thyagodacruz1@gmail.com
 </div>
 
 <button onclick="copiarPix()">Copiar Chave PIX</button>
 
-<p style="margin-top:20px;">
-Após pagar, envie o comprovante no WhatsApp do admin.
+<p style="margin-top:20px; font-size:14px;">
+Após realizar o pagamento, envie o comprovante para o administrador para ativação do VIP.
 </p>
 
 </div>
@@ -71,7 +83,7 @@ Após pagar, envie o comprovante no WhatsApp do admin.
 function copiarPix(){
   const chave = document.getElementById("pixKey").innerText;
   navigator.clipboard.writeText(chave);
-  alert("Chave PIX copiada!");
+  alert("Chave PIX copiada com sucesso!");
 }
 </script>
 
