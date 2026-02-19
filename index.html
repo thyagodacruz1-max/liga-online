@@ -14,18 +14,20 @@ body{
   text-align:center;
 }
 
+/* ===== HEADER ===== */
+
 header{
   background:#000;
-  padding:20px;
-  border-bottom:2px solid #00f2ff;
+  padding:30px 10px;
+  border-bottom:3px solid #00f2ff;
 }
 
-h1{
-  color:#00f2ff;
-  margin:0;
-  font-size:32px;
-  letter-spacing:2px;
+.logo{
+  width:350px;
+  max-width:95%;
 }
+
+/* ===== MENU ===== */
 
 .menu{
   margin:20px 0;
@@ -40,6 +42,42 @@ h1{
   font-weight:bold;
   cursor:pointer;
 }
+
+/* ===== PATROCÍNIO ===== */
+
+.patrocinio{
+  background:#111;
+  padding:20px;
+  margin:20px;
+  border-radius:10px;
+  border:1px solid #00f2ff;
+}
+
+.patrocinio h3{
+  color:gold;
+}
+
+.patrocinadores{
+  display:flex;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:20px;
+  margin-top:15px;
+}
+
+.patrocinador-box{
+  width:160px;
+  height:90px;
+  background:#1c1c1c;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:8px;
+  border:1px dashed #555;
+  font-size:14px;
+}
+
+/* ===== TABELA ===== */
 
 .tabela{
   width:95%;
@@ -59,12 +97,20 @@ h1{
   border-bottom:1px solid #333;
 }
 
-.top2{
+.promovido{
   background:#1f3f1f;
 }
 
 .rebaixado{
   background:#3f1f1f;
+}
+
+footer{
+  margin-top:40px;
+  padding:20px;
+  background:#000;
+  border-top:2px solid #00f2ff;
+  font-size:14px;
 }
 
 </style>
@@ -73,20 +119,39 @@ h1{
 <body>
 
 <header>
-  <h1>ChaMpioSerieS</h1>
+  <!-- 🔥 LOGO -->
+  <img src="assets/logo.png" class="logo" alt="ChaMpioSerieS Logo">
 </header>
 
 <div class="menu">
   <a href="loginPlayer.html"><button>🔐 Login</button></a>
   <a href="cadastro.html"><button>📝 Cadastro</button></a>
-  <a href="rankingMoedas.html"><button>🪙 Ranking Moedas</button></a>
-  <a href="planoVip.html"><button>💎 Plano VIP</button></a>
+  <a href="rankingMoedas.html"><button>🪙 Ranking</button></a>
+  <a href="planoVip.html"><button>💎 VIP</button></a>
   <a href="admin.html"><button>⚙️ Admin</button></a>
+</div>
+
+<div class="patrocinio">
+  <h3>🏆 Patrocinadores Oficiais</h3>
+
+  <div class="patrocinadores">
+    <div class="patrocinador-box">Sua Marca Aqui</div>
+    <div class="patrocinador-box">Espaço Publicitário</div>
+    <div class="patrocinador-box">Parceiro Oficial</div>
+  </div>
+
+  <p style="margin-top:15px;">
+    📩 Quer divulgar sua marca? Entre em contato.
+  </p>
 </div>
 
 <div id="serieA"></div>
 <div id="serieB"></div>
 <div id="serieC"></div>
+
+<footer>
+  © 2026 ChaMpioSerieS - Campeonato Oficial
+</footer>
 
 <script type="module">
 
@@ -139,8 +204,6 @@ function montarTabela(serie){
         <th>Nome</th>
         <th>Pts</th>
         <th>V</th>
-        <th>GP</th>
-        <th>GC</th>
         <th>🪙</th>
       </tr>
   `;
@@ -148,8 +211,7 @@ function montarTabela(serie){
   lista.forEach((j,index)=>{
 
     let classe="";
-
-    if(index<2) classe="top2";
+    if(index<2) classe="promovido";
     if(index>=10) classe="rebaixado";
 
     html+=`
@@ -158,8 +220,6 @@ function montarTabela(serie){
         <td>${j.vip ? "💎 " : ""}${j.nome}</td>
         <td>${j.pontos||0}</td>
         <td>${j.vitorias||0}</td>
-        <td>${j.golsPro||0}</td>
-        <td>${j.golsContra||0}</td>
         <td>${j.moedas||0}</td>
       </tr>
     `;
