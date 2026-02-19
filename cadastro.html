@@ -35,6 +35,12 @@ button{
   border-radius:10px;
   margin-bottom:20px;
 }
+
+.lotado{
+  color:#ff4444;
+  font-weight:bold;
+}
+
 </style>
 </head>
 <body>
@@ -43,7 +49,7 @@ button{
 
 <div class="card">
   <h3>📊 Vagas Disponíveis</h3>
-  <div id="vagasInfo"></div>
+  <div id="vagasInfo">Carregando...</div>
 </div>
 
 <input type="text" id="nome" placeholder="Nome do jogador"><br>
@@ -52,7 +58,7 @@ button{
 
 <select id="serieSelect"></select><br>
 
-<button onclick="cadastrar()">Criar Conta</button>
+<button id="btnCadastro" onclick="cadastrar()">Criar Conta</button>
 
 <p id="msg"></p>
 
@@ -82,19 +88,19 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-let contagem = {A:0, B:0, C:0};
 const limite = 12;
 
-// 💰 VALORES ATUALIZADOS
 const valores = {
   A: 15,
   B: 10,
   C: 5
 };
 
+let contagem = {A:0,B:0,C:0};
+
 onSnapshot(collection(db,"jogadores"), snapshot=>{
 
-  contagem = {A:0, B:0, C:0};
+  contagem = {A:0,B:0,C:0};
 
   snapshot.forEach(docSnap=>{
     const j = docSnap.data();
@@ -106,17 +112,22 @@ onSnapshot(collection(db,"jogadores"), snapshot=>{
 
 function atualizarTela(){
 
-  let html = "";
   const select = document.getElementById("serieSelect");
+  const vagasInfo = document.getElementById("vagasInfo");
+  const btn = document.getElementById("btnCadastro");
+
   select.innerHTML = "";
+  let html = "";
+  let algumaVaga = false;
 
   ["A","B","C"].forEach(serie=>{
 
     const vagas = limite - contagem[serie];
 
     if(vagas <= 0){
-      html += `Série ${serie} — ❌ Lotada<br>`;
+      html += `Série ${serie} — <span class="lotado">❌ Lotada</span><br>`;
     }else{
+      algumaVaga = true;
       html += `Série ${serie} — ${vagas} vagas — R$ ${valores[serie]}<br>`;
       select.innerHTML += `
         <option value="${serie}">
@@ -124,20 +135,35 @@ function atualizarTela(){
         </option>
       `;
     }
+
   });
 
-  document.getElementById("vagasInfo").innerHTML = html;
+  if(!algumaVaga){
+    html += "<br><span class='lotado'>⚠️ Todas as divisões estão lotadas.</span>";
+    btn.disabled = true;
+    btn.style.background = "#555";
+  }else{
+    btn.disabled = false;
+    btn.style.background = "#00f2ff";
+  }
+
+  vagasInfo.innerHTML = html;
 }
 
 window.cadastrar = async function(){
 
-  const nome = document.getElementById("nome").value;
-  const email = document.getElementById("email").value;
-  const senha = document.getElementById("senha").value;
+  const nome = document.getElementById("nome").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const senha = document.getElementById("senha").value.trim();
   const serie = document.getElementById("serieSelect").value;
 
-  if(!nome || !email || !senha || !serie){
+  if(!nome || !email || !senha){
     document.getElementById("msg").innerText="Preencha todos os campos.";
+    return;
+  }
+
+  if(!serie){
+    document.getElementById("msg").innerText="Nenhuma divisão disponível.";
     return;
   }
 
