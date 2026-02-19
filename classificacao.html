@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Classificação - Liga Online</title>
+<title>Classificação Oficial - Liga Online</title>
 
 <style>
 body{
@@ -11,17 +11,29 @@ body{
   color:white;
   font-family:Arial;
   text-align:center;
+  margin:0;
+}
+
+header{
+  background:#000;
+  padding:20px;
+  border-bottom:2px solid #00f2ff;
 }
 
 h1{
   color:#00f2ff;
-  margin-top:20px;
+  margin:0;
+}
+
+h2{
+  margin-top:40px;
+  color:#00f2ff;
 }
 
 .tabela{
   width:95%;
-  max-width:900px;
-  margin:30px auto;
+  max-width:1100px;
+  margin:20px auto;
   border-collapse:collapse;
 }
 
@@ -35,25 +47,14 @@ h1{
   padding:8px;
   border-bottom:1px solid #333;
 }
-
-.lider{
-  background:#1f3d1f;
-}
-
-.rebaixado{
-  background:#3d1f1f;
-}
-
-h2{
-  margin-top:50px;
-  color:#00f2ff;
-}
 </style>
 </head>
 
 <body>
 
-<h1>🏆 Classificação Oficial - Liga Online</h1>
+<header>
+  <h1>🏆 Liga Online - Classificação Oficial</h1>
+</header>
 
 <div id="serieA"></div>
 <div id="serieB"></div>
@@ -78,23 +79,27 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-onSnapshot(collection(db,"jogadores"), snapshot=>{
+let jogadoresGlobal = [];
 
-  let jogadores = [];
+onSnapshot(collection(db,"jogadores"), snapshot=>{
+  
+  jogadoresGlobal = [];
 
   snapshot.forEach(docSnap=>{
-    jogadores.push(docSnap.data());
+    jogadoresGlobal.push({
+      id: docSnap.id,
+      ...docSnap.data()
+    });
   });
 
-  montarTabela("A", jogadores);
-  montarTabela("B", jogadores);
-  montarTabela("C", jogadores);
-
+  montarTabela("A");
+  montarTabela("B");
+  montarTabela("C");
 });
 
-function montarTabela(serie, lista){
+function montarTabela(serie){
 
-  const jogadoresSerie = lista
+  const jogadoresSerie = jogadoresGlobal
     .filter(j => j.serie === serie)
     .sort((a,b)=>{
       if((b.pontos||0)!==(a.pontos||0))
@@ -103,6 +108,13 @@ function montarTabela(serie, lista){
     });
 
   let html = `<h2>🏅 Série ${serie}</h2>`;
+
+  if(jogadoresSerie.length === 0){
+    html += "<p>Nenhum jogador nesta série.</p>";
+    document.getElementById("serie"+serie).innerHTML = html;
+    return;
+  }
+
   html += `
     <table class="tabela">
       <tr>
@@ -110,32 +122,21 @@ function montarTabela(serie, lista){
         <th>Nome</th>
         <th>Pts</th>
         <th>V</th>
-        <th>E</th>
-        <th>D</th>
-        <th>GP</th>
-        <th>GC</th>
-        <th>ELO</th>
+        <th>Saldo</th>
       </tr>
   `;
 
   jogadoresSerie.forEach((j, index)=>{
 
-    let classe = "";
-
-    if(index === 0) classe = "lider";
-    if(index >= jogadoresSerie.length-2) classe = "rebaixado";
+    const saldo = (j.golsPro||0) - (j.golsContra||0);
 
     html += `
-      <tr class="${classe}">
+      <tr>
         <td>${index+1}</td>
         <td>${j.nome}</td>
         <td>${j.pontos||0}</td>
         <td>${j.vitorias||0}</td>
-        <td>${j.empates||0}</td>
-        <td>${j.derrotas||0}</td>
-        <td>${j.golsPro||0}</td>
-        <td>${j.golsContra||0}</td>
-        <td>${j.elo||1000}</td>
+        <td>${saldo}</td>
       </tr>
     `;
   });
