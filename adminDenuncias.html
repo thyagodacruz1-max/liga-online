@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Painel de Moderação - Liga Online</title>
+
+<style>
+body{
+  background:#0f0f0f;
+  color:white;
+  font-family:Arial;
+  padding:20px;
+}
+
+h1{
+  text-align:center;
+  color:#ff4444;
+}
+
+.card{
+  background:#1c1c1c;
+  padding:15px;
+  margin:15px 0;
+  border-radius:8px;
+}
+
+button{
+  padding:6px 10px;
+  margin:5px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.ban{ background:#aa0000; color:white; }
+.mute{ background:#ff9900; color:black; }
+.remover{ background:#666; color:white; }
+.resolver{ background:#00cc66; color:black; }
+
+</style>
+</head>
+<body>
+
+<h1>🚨 Painel de Denúncias</h1>
+
+<div id="listaDenuncias"></div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  onSnapshot,
+  doc,
+  updateDoc,
+  deleteDoc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  getAuth,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAgLb8XfVgjmOdyMWxdWKVOygMivU6TRM0",
+  authDomain: "liga-online-8f74d.firebaseapp.com",
+  projectId:"liga-online-8f74d",
+  appId: "1:815073531863:web:625fe25cfe74e705001d92",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// 🔐 PROTEGER ROTA (apenas admin)
+onAuthStateChanged(auth, user=>{
+  if(!user){
+    window.location.href="login.html";
+  }
+});
+
+onSnapshot(collection(db,"denuncias"), async snapshot=>{
+
+  const container=document.getElementById("listaDenuncias");
+  container.innerHTML="";
+
+  for(const docSnap of snapshot.docs){
+
+    const denuncia=docSnap.data();
+
+    const mensagemDoc=await getDoc(doc(db,"chatGlobal",denuncia.mensagemId));
+    const textoMensagem=mensagemDoc.exists() ? mensagemDoc.data().texto : "Mensagem já removida";
+
+    container.innerHTML+=`
+      <div class="card">
+        <strong>Mensagem:</strong> ${textoMensagem}<br>
+        <strong>Denunciado UID:</strong> ${denuncia.denunciado}<br>
+        <strong>Status:</strong> ${denuncia.status}<br>
+
+        <button class="remover" onclick="removerMensagem('${denuncia.mensagemId}')">
+          🗑 Remover Mensagem
+        </button>
+
+        <button class="mute" onclick="mutarJogador('${denuncia.denunciado}')">
+          🔇 Mutar 24h
+        </button>
+
+        <button class="ban" onclick="banirJogador('${denuncia.denunciado}')">
+          ⛔ Banir
+        </button>
+
+        <button class="resolver" onclick="resolver('${docSnap.id}')">
+          ✅ Marcar Resolvido
+        </button>
+      </div>
+    `;
+  }
+
+});
+
+// 🗑 REMOVER MENSAGEM
+window.removerMensagem = async function(mensagemId){
+  await deleteDoc(doc(db,"chatGlobal",mensagemId));
+  alert("Mensagem removida.");
+};
+
+// 🔇 MUTE 24H
+window.mutarJogador = async function(uid){
+
+  const expira = new Date();
+  expira.setHours(expira.getHours()+24);
+
+  await updateDoc(doc(db,"jogadores",uid),{
+    muteAte: expira
+  });
+
+  alert("Jogador mutado por 24 horas.");
+};
+
+// ⛔ BANIR
+window.banirJogador = async function(uid){
+
+  await updateDoc(doc(db,"jogadores",uid),{
+    banido:true
+  });
+
+  alert("Jogador banido.");
+};
+
+// ✅ RESOLVER DENÚNCIA
+window.resolver = async function(id){
+  await updateDoc(doc(db,"denuncias",id),{
+    status:"resolvido"
+  });
+  alert("Denúncia marcada como resolvida.");
+};
+
+</script>
+
+</body>
+</html>
