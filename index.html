@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Classificação Oficial - Liga Online</title>
+<title>Ranking por Moedas - Liga Online</title>
 
 <style>
 body{
@@ -39,14 +39,9 @@ h1{
   margin:0;
 }
 
-h2{
-  margin-top:40px;
-  color:#00f2ff;
-}
-
 .tabela{
   width:95%;
-  max-width:1100px;
+  max-width:900px;
   margin:20px auto;
   border-collapse:collapse;
 }
@@ -54,11 +49,11 @@ h2{
 .tabela th{
   background:#00f2ff;
   color:black;
-  padding:8px;
+  padding:10px;
 }
 
 .tabela td{
-  padding:8px;
+  padding:10px;
   border-bottom:1px solid #333;
 }
 </style>
@@ -70,16 +65,14 @@ h2{
   <a href="index.html"><button>🏆 Classificação</button></a>
   <a href="admin.html"><button>⚙️ Admin</button></a>
   <a href="enviar.html"><button>📤 Registrar</button></a>
-  <a href="rankingGeral.html"><button>🌎 Ranking</button></a>
+  <a href="rankingMoedas.html"><button>🪙 Ranking Moedas</button></a>
 </div>
 
 <header>
-  <h1>🏆 Liga Online - Classificação Oficial</h1>
+  <h1>🪙 Ranking Oficial por Moedas</h1>
 </header>
 
-<div id="serieA"></div>
-<div id="serieB"></div>
-<div id="serieC"></div>
+<div id="ranking"></div>
 
 <script type="module">
 
@@ -100,86 +93,58 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-let jogadoresGlobal = [];
-
 onSnapshot(collection(db,"jogadores"), snapshot=>{
   
-  jogadoresGlobal = [];
+  let jogadores = [];
 
   snapshot.forEach(docSnap=>{
-    jogadoresGlobal.push({
+    jogadores.push({
       id: docSnap.id,
       ...docSnap.data()
     });
   });
 
-  montarTabela("A");
-  montarTabela("B");
-  montarTabela("C");
-});
+  jogadores.sort((a,b)=> (b.moedas||0)-(a.moedas||0));
 
-function montarTabela(serie){
-
-  const jogadoresSerie = jogadoresGlobal
-    .filter(j => j.serie === serie)
-    .sort((a,b)=>{
-      if((b.pontos||0)!==(a.pontos||0))
-        return (b.pontos||0)-(a.pontos||0);
-      return (b.elo||1000)-(a.elo||1000);
-    });
-
-  let html = `<h2>🏅 Série ${serie}</h2>`;
-
-  if(jogadoresSerie.length === 0){
-    html += "<p>Nenhum jogador nesta série.</p>";
-    document.getElementById("serie"+serie).innerHTML = html;
-    return;
-  }
-
-  html += `
+  let html = `
     <table class="tabela">
       <tr>
         <th>#</th>
-        <th>Nome</th>
-        <th>Pts</th>
-        <th>Vitórias</th>
-        <th>Saldo</th>
+        <th>Jogador</th>
         <th>🪙 Moedas</th>
+        <th>Série</th>
       </tr>
   `;
 
-  jogadoresSerie.forEach((j, index)=>{
+  jogadores.forEach((j, index)=>{
 
-    const saldo = (j.golsPro||0) - (j.golsContra||0);
+    let estilo = "";
 
-    let estiloLinha = "";
-
-    // 🥇 Líder dourado
     if(index === 0){
-      estiloLinha = "background:gold;color:black;font-weight:bold;";
+      estilo = "background:gold;color:black;font-weight:bold;";
     }
-
-    // 🔻 Últimos 2 rebaixados
-    if(index >= jogadoresSerie.length - 2){
-      estiloLinha = "background:#aa0000;color:white;";
+    else if(index === 1){
+      estilo = "background:silver;color:black;font-weight:bold;";
+    }
+    else if(index === 2){
+      estilo = "background:#cd7f32;color:black;font-weight:bold;";
     }
 
     html += `
-      <tr style="${estiloLinha}">
+      <tr style="${estilo}">
         <td>${index+1}</td>
         <td>${j.nome}</td>
-        <td>${j.pontos||0}</td>
-        <td>${j.vitorias||0}</td>
-        <td>${saldo}</td>
         <td>${j.moedas||0}</td>
+        <td>${j.serie||"-"}</td>
       </tr>
     `;
   });
 
   html += "</table>";
 
-  document.getElementById("serie"+serie).innerHTML = html;
-}
+  document.getElementById("ranking").innerHTML = html;
+
+});
 
 </script>
 
