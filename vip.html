@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema VIP - Liga Online</title>
+
+<style>
+body{
+  background:#0f0f0f;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+  margin:0;
+}
+
+.menu{
+  background:#000;
+  padding:15px;
+  border-bottom:2px solid #00f2ff;
+}
+
+.menu button{
+  margin:5px;
+  padding:8px 12px;
+  background:#00f2ff;
+  border:none;
+  border-radius:6px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+header{
+  padding:20px;
+}
+
+h1{
+  color:#00f2ff;
+  margin:0;
+}
+
+.card{
+  background:#1c1c1c;
+  padding:20px;
+  margin:20px auto;
+  width:300px;
+  border-radius:10px;
+}
+
+button.vip{
+  background:gold;
+  color:black;
+}
+</style>
+</head>
+
+<body>
+
+<div class="menu">
+  <a href="index.html"><button>🏆 Classificação</button></a>
+  <a href="admin.html"><button>⚙️ Admin</button></a>
+  <a href="rankingMoedas.html"><button>🪙 Ranking</button></a>
+  <a href="vip.html"><button>💎 VIP</button></a>
+</div>
+
+<header>
+  <h1>💎 Sistema VIP Oficial</h1>
+</header>
+
+<div>
+  <select id="jogadorSelect"></select>
+  <button class="vip" onclick="ativarVIP()">Ativar VIP</button>
+  <button onclick="removerVIP()">Remover VIP</button>
+</div>
+
+<div id="listaVIP"></div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { 
+  getFirestore,
+  collection,
+  onSnapshot,
+  doc,
+  updateDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAgLb8XfVgjmOdyMWxdWKVOygMivU6TRM0",
+  authDomain: "liga-online-8f74d.firebaseapp.com",
+  projectId:"liga-online-8f74d",
+  appId: "1:815073531863:web:625fe25cfe74e705001d92",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let jogadores = [];
+
+onSnapshot(collection(db,"jogadores"), snapshot=>{
+  
+  jogadores = [];
+  let htmlVIP = "";
+
+  snapshot.forEach(docSnap=>{
+    jogadores.push({
+      id: docSnap.id,
+      ...docSnap.data()
+    });
+  });
+
+  const select = document.getElementById("jogadorSelect");
+  select.innerHTML = "";
+
+  jogadores.forEach(j=>{
+    select.innerHTML += `<option value="${j.id}">${j.nome}</option>`;
+  });
+
+  const vips = jogadores.filter(j=>j.vip === true);
+
+  if(vips.length === 0){
+    htmlVIP = "<p>Nenhum jogador VIP ainda.</p>";
+  } else {
+    vips.forEach(j=>{
+      htmlVIP += `
+        <div class="card">
+          💎 ${j.nome} - Série ${j.serie}
+        </div>
+      `;
+    });
+  }
+
+  document.getElementById("listaVIP").innerHTML = htmlVIP;
+
+});
+
+window.ativarVIP = async function(){
+
+  const id = document.getElementById("jogadorSelect").value;
+
+  await updateDoc(doc(db,"jogadores",id),{
+    vip:true
+  });
+
+  alert("💎 VIP ativado!");
+};
+
+window.removerVIP = async function(){
+
+  const id = document.getElementById("jogadorSelect").value;
+
+  await updateDoc(doc(db,"jogadores",id),{
+    vip:false
+  });
+
+  alert("VIP removido.");
+};
+
+</script>
+
+</body>
+</html>
