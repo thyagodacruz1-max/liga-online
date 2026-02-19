@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Cadastro - Liga Online</title>
+<title>Cadastro - ChaMpioSerieS</title>
 
 <style>
 body{
@@ -13,7 +13,7 @@ body{
   padding:40px;
 }
 
-input{
+input, select{
   padding:10px;
   margin:10px;
   border-radius:6px;
@@ -28,15 +28,29 @@ button{
   font-weight:bold;
   cursor:pointer;
 }
+
+.card{
+  background:#1c1c1c;
+  padding:20px;
+  border-radius:10px;
+  margin-bottom:20px;
+}
 </style>
 </head>
 <body>
 
 <h2>📝 Cadastro de Jogador</h2>
 
+<div class="card">
+  <h3>📊 Vagas Disponíveis</h3>
+  <div id="vagasInfo"></div>
+</div>
+
 <input type="text" id="nome" placeholder="Nome do jogador"><br>
 <input type="email" id="email" placeholder="Email"><br>
 <input type="password" id="senha" placeholder="Senha"><br>
+
+<select id="serieSelect"></select><br>
 
 <button onclick="cadastrar()">Criar Conta</button>
 
@@ -51,6 +65,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { 
   getFirestore, 
+  collection,
+  onSnapshot,
   doc, 
   setDoc 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -66,11 +82,64 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+let contagem = {A:0, B:0, C:0};
+const limite = 12;
+
+// 💰 VALORES ATUALIZADOS
+const valores = {
+  A: 15,
+  B: 10,
+  C: 5
+};
+
+onSnapshot(collection(db,"jogadores"), snapshot=>{
+
+  contagem = {A:0, B:0, C:0};
+
+  snapshot.forEach(docSnap=>{
+    const j = docSnap.data();
+    if(j.serie) contagem[j.serie]++;
+  });
+
+  atualizarTela();
+});
+
+function atualizarTela(){
+
+  let html = "";
+  const select = document.getElementById("serieSelect");
+  select.innerHTML = "";
+
+  ["A","B","C"].forEach(serie=>{
+
+    const vagas = limite - contagem[serie];
+
+    if(vagas <= 0){
+      html += `Série ${serie} — ❌ Lotada<br>`;
+    }else{
+      html += `Série ${serie} — ${vagas} vagas — R$ ${valores[serie]}<br>`;
+      select.innerHTML += `
+        <option value="${serie}">
+          Série ${serie} - R$ ${valores[serie]}
+        </option>
+      `;
+    }
+  });
+
+  document.getElementById("vagasInfo").innerHTML = html;
+}
+
 window.cadastrar = async function(){
 
   const nome = document.getElementById("nome").value;
   const email = document.getElementById("email").value;
   const senha = document.getElementById("senha").value;
+  const serie = document.getElementById("serieSelect").value;
+
+  if(!nome || !email || !senha || !serie){
+    document.getElementById("msg").innerText="Preencha todos os campos.";
+    return;
+  }
 
   try{
 
@@ -87,13 +156,19 @@ window.cadastrar = async function(){
       golsPro:0,
       golsContra:0,
       moedas:0,
-      serie:"C",
+      serie:serie,
+      valorInscricao: valores[serie],
+      pago:false,
       vip:false,
       criadoEm:new Date()
     });
 
-    document.getElementById("msg").innerText="Conta criada com sucesso!";
-    window.location.href="loginPlayer.html";
+    document.getElementById("msg").innerText =
+      "Conta criada! Valor da inscrição: R$ " + valores[serie];
+
+    setTimeout(()=>{
+      window.location.href="loginPlayer.html";
+    },2000);
 
   }catch(error){
     document.getElementById("msg").innerText="Erro ao criar conta.";
