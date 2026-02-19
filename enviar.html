@@ -10,18 +10,6 @@ body{
   color:white;
   text-align:center;
   font-family:Arial;
-  margin:0;
-  padding:0;
-}
-
-.menu{
-  background:#000;
-  padding:15px;
-  border-bottom:2px solid #00f2ff;
-}
-
-.menu button{
-  margin:5px;
 }
 
 input{
@@ -42,16 +30,6 @@ button{
 </style>
 </head>
 <body>
-
-<div class="menu">
-  <a href="index.html">
-    <button>🏠 Classificação</button>
-  </a>
-
-  <a href="admin.html">
-    <button>⚙️ Admin</button>
-  </a>
-</div>
 
 <h2>📤 Registrar Resultado</h2>
 
@@ -98,6 +76,7 @@ window.enviar = async function(){
     return;
   }
 
+  // Buscar jogadores
   const q1 = query(collection(db,"jogadores"), where("nome","==",nome1));
   const snap1 = await getDocs(q1);
   if(snap1.empty){ alert("Jogador 1 não encontrado."); return; }
@@ -127,33 +106,45 @@ window.enviar = async function(){
   let moedas1 = j1.moedas || 0;
   let moedas2 = j2.moedas || 0;
 
+  // 🪙 +1 moeda por gol
   moedas1 += gols1;
   moedas2 += gols2;
 
   if(gols1 > gols2){
+
     pontos1 += 3;
     vitorias1 += 1;
     derrotas2 += 1;
+
+    // 💰 Vitória normal
     moedas1 += 10;
+
+    // 💎 BÔNUS VIP
+    if(j1.vip === true){
+      moedas1 += 5;
+    }
+
   } 
   else if(gols2 > gols1){
+
     pontos2 += 3;
     vitorias2 += 1;
     derrotas1 += 1;
+
     moedas2 += 10;
+
+    if(j2.vip === true){
+      moedas2 += 5;
+    }
+
   } 
   else{
+
     pontos1 += 1;
     pontos2 += 1;
     empates1 += 1;
     empates2 += 1;
   }
-
-  let historico1 = j1.historicoPontos || [0];
-  let historico2 = j2.historicoPontos || [0];
-
-  historico1.push(pontos1);
-  historico2.push(pontos2);
 
   await updateDoc(doc(db,"jogadores",doc1.id),{
     pontos:pontos1,
@@ -162,8 +153,7 @@ window.enviar = async function(){
     derrotas:derrotas1,
     golsPro:(j1.golsPro||0)+gols1,
     golsContra:(j1.golsContra||0)+gols2,
-    moedas:moedas1,
-    historicoPontos:historico1
+    moedas:moedas1
   });
 
   await updateDoc(doc(db,"jogadores",doc2.id),{
@@ -173,11 +163,10 @@ window.enviar = async function(){
     derrotas:derrotas2,
     golsPro:(j2.golsPro||0)+gols2,
     golsContra:(j2.golsContra||0)+gols1,
-    moedas:moedas2,
-    historicoPontos:historico2
+    moedas:moedas2
   });
 
-  alert("✅ Resultado registrado com histórico automático!");
+  alert("🔥 Resultado registrado! VIP recebe bônus extra!");
 
 };
 
