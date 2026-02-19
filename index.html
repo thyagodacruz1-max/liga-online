@@ -67,21 +67,10 @@ h2{
 <body>
 
 <div class="menu">
-  <a href="index.html">
-    <button>🏆 Classificação</button>
-  </a>
-
-  <a href="admin.html">
-    <button>⚙️ Admin</button>
-  </a>
-
-  <a href="enviar.html">
-    <button>📤 Registrar</button>
-  </a>
-
-  <a href="rankingGeral.html">
-    <button>🌎 Ranking</button>
-  </a>
+  <a href="index.html"><button>🏆 Classificação</button></a>
+  <a href="admin.html"><button>⚙️ Admin</button></a>
+  <a href="enviar.html"><button>📤 Registrar</button></a>
+  <a href="rankingGeral.html"><button>🌎 Ranking</button></a>
 </div>
 
 <header>
@@ -162,8 +151,20 @@ function montarTabela(serie){
 
     const saldo = (j.golsPro||0) - (j.golsContra||0);
 
+    let estiloLinha = "";
+
+    // 🥇 Líder dourado
+    if(index === 0){
+      estiloLinha = "background:gold;color:black;font-weight:bold;";
+    }
+
+    // 🔻 Últimos 2 rebaixados
+    if(index >= jogadoresSerie.length - 2){
+      estiloLinha = "background:#aa0000;color:white;";
+    }
+
     html += `
-      <tr>
+      <tr style="${estiloLinha}">
         <td>${index+1}</td>
         <td>${j.nome}</td>
         <td>${j.pontos||0}</td>
