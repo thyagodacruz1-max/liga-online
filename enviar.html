@@ -76,7 +76,6 @@ window.enviar = async function(){
     return;
   }
 
-  // Buscar jogadores
   const q1 = query(collection(db,"jogadores"), where("nome","==",nome1));
   const snap1 = await getDocs(q1);
   if(snap1.empty){ alert("Jogador 1 não encontrado."); return; }
@@ -106,7 +105,7 @@ window.enviar = async function(){
   let moedas1 = j1.moedas || 0;
   let moedas2 = j2.moedas || 0;
 
-  // 🪙 +1 moeda por gol
+  // +1 moeda por gol
   moedas1 += gols1;
   moedas2 += gols2;
 
@@ -116,11 +115,10 @@ window.enviar = async function(){
     vitorias1 += 1;
     derrotas2 += 1;
 
-    // 💰 Vitória normal
-    moedas1 += 10;
+    moedas1 += 10; // bônus vitória normal
 
-    // 💎 BÔNUS VIP
-    if(j1.vip === true){
+    // 🔥 BÔNUS VIP EXTRA
+    if(j1.vip){
       moedas1 += 5;
     }
 
@@ -133,13 +131,12 @@ window.enviar = async function(){
 
     moedas2 += 10;
 
-    if(j2.vip === true){
+    if(j2.vip){
       moedas2 += 5;
     }
 
   } 
   else{
-
     pontos1 += 1;
     pontos2 += 1;
     empates1 += 1;
@@ -166,7 +163,7 @@ window.enviar = async function(){
     moedas:moedas2
   });
 
-  alert("🔥 Resultado registrado! VIP recebe bônus extra!");
+  alert("✅ Resultado registrado! (VIP recebe +5 moedas extras)");
 
 };
 
