@@ -17,13 +17,21 @@ body{
   background:#1c1c1c;
   padding:30px;
   border-radius:12px;
-  max-width:400px;
+  max-width:450px;
   margin:auto;
   box-shadow:0 0 20px rgba(0,242,255,0.3);
 }
 
 h2{
   color:#00f2ff;
+}
+
+input{
+  padding:10px;
+  width:90%;
+  margin-top:15px;
+  border-radius:6px;
+  border:none;
 }
 
 button{
@@ -59,32 +67,62 @@ button{
 
 <p><strong>Benefícios VIP:</strong></p>
 <p>✔ Acesso à Copa VIP</p>
-<p>✔ Bônus de moedas por vitória</p>
+<p>✔ Bônus de moedas</p>
 <p>✔ Nome com destaque 💎</p>
-<p>✔ Prioridade em campeonatos</p>
 
 <hr style="border:1px solid #333;">
 
-<h3>📲 Pague via PIX</h3>
+<h3>📲 Chave PIX</h3>
 
-<div class="pix" id="pixKey">
+<div class="pix">
 thyagodacruz1@gmail.com
 </div>
 
-<button onclick="copiarPix()">Copiar Chave PIX</button>
+<input type="text" id="nome" placeholder="Digite seu nome no campeonato">
 
-<p style="margin-top:20px; font-size:14px;">
-Após realizar o pagamento, envie o comprovante para o administrador para ativação do VIP.
-</p>
+<button onclick="jaPaguei()">Já paguei</button>
+
+<p id="statusMsg" style="margin-top:15px;"></p>
 
 </div>
 
-<script>
-function copiarPix(){
-  const chave = document.getElementById("pixKey").innerText;
-  navigator.clipboard.writeText(chave);
-  alert("Chave PIX copiada com sucesso!");
-}
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc } 
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAgLb8XfVgjmOdyMWxdWKVOygMivU6TRM0",
+  authDomain: "liga-online-8f74d.firebaseapp.com",
+  projectId: "liga-online-8f74d",
+  appId: "1:815073531863:web:625fe25cfe74e705001d92"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.jaPaguei = async function(){
+
+  const nome = document.getElementById("nome").value.trim();
+
+  if(!nome){
+    alert("Digite seu nome.");
+    return;
+  }
+
+  await addDoc(collection(db,"vipSolicitacoes"),{
+    nome:nome,
+    status:"pendente",
+    data:new Date()
+  });
+
+  document.getElementById("statusMsg").innerHTML =
+    "✅ Solicitação enviada! Aguarde ativação.";
+
+  document.getElementById("nome").value="";
+};
+
 </script>
 
 </body>
