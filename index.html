@@ -144,6 +144,7 @@ function montarTabela(serie){
         <th>Pts</th>
         <th>Vitórias</th>
         <th>Saldo</th>
+        <th>🪙 Moedas</th>
       </tr>
   `;
 
@@ -170,6 +171,7 @@ function montarTabela(serie){
         <td>${j.pontos||0}</td>
         <td>${j.vitorias||0}</td>
         <td>${saldo}</td>
+        <td>${j.moedas||0}</td>
       </tr>
     `;
   });
