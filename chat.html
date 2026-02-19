@@ -6,10 +6,10 @@
 
 <style>
 body{
+  margin:0;
+  font-family:Arial;
   background:#0f0f0f;
   color:white;
-  font-family:Arial;
-  margin:0;
   display:flex;
   flex-direction:column;
   height:100vh;
@@ -20,19 +20,40 @@ header{
   padding:15px;
   text-align:center;
   border-bottom:2px solid #00f2ff;
+  font-size:18px;
+  font-weight:bold;
+}
+
+.menu{
+  background:#111;
+  padding:10px;
+  text-align:center;
+}
+
+.menu button{
+  margin:5px;
+  padding:8px 12px;
+  background:#00f2ff;
+  border:none;
+  border-radius:6px;
+  font-weight:bold;
+  cursor:pointer;
 }
 
 #chatBox{
   flex:1;
   overflow-y:auto;
   padding:15px;
+  display:flex;
+  flex-direction:column;
 }
 
 .mensagem{
-  margin:8px 0;
   padding:10px;
+  margin:6px 0;
   border-radius:8px;
   max-width:70%;
+  word-wrap:break-word;
 }
 
 .minha{
@@ -43,6 +64,17 @@ header{
 
 .outro{
   background:#1c1c1c;
+  align-self:flex-start;
+}
+
+.nome{
+  font-weight:bold;
+  font-size:13px;
+}
+
+.hora{
+  font-size:10px;
+  opacity:0.7;
 }
 
 #inputArea{
@@ -56,9 +88,10 @@ header{
   padding:10px;
   border-radius:6px;
   border:none;
+  outline:none;
 }
 
-button{
+#btnEnviar{
   padding:10px 15px;
   margin-left:5px;
   border:none;
@@ -71,23 +104,28 @@ button{
 </head>
 <body>
 
-<header>
-  💬 Chat Liga Online
-</header>
+<header>💬 Chat Liga Online</header>
+
+<div class="menu">
+  <a href="index.html"><button>🏆 Classificação</button></a>
+  <a href="player.html"><button>🎮 Meu Perfil</button></a>
+  <button onclick="logout()">🚪 Sair</button>
+</div>
 
 <div id="chatBox"></div>
 
 <div id="inputArea">
   <input type="text" id="mensagem" placeholder="Digite sua mensagem...">
-  <button onclick="enviar()">Enviar</button>
+  <button id="btnEnviar" onclick="enviar()">Enviar</button>
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { 
+import {
   getAuth,
-  onAuthStateChanged
+  onAuthStateChanged,
+  signOut
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import {
   getFirestore,
@@ -95,7 +133,8 @@ import {
   addDoc,
   onSnapshot,
   query,
-  orderBy
+  orderBy,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -109,22 +148,25 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-let usuarioAtual = null;
+let usuario = null;
 
-onAuthStateChanged(auth, user => {
+// 🔐 PROTEÇÃO DE ROTA
+onAuthStateChanged(auth, user=>{
   if(!user){
     window.location.href="loginPlayer.html";
-    return;
+  }else{
+    usuario = user;
   }
-  usuarioAtual = user;
 });
 
+// 🔥 ESCUTAR CHAT EM TEMPO REAL
 const chatRef = collection(db,"chatGlobal");
 const q = query(chatRef, orderBy("data","asc"));
 
 onSnapshot(q, snapshot=>{
+
   const chatBox = document.getElementById("chatBox");
-  chatBox.innerHTML = "";
+  chatBox.innerHTML="";
 
   snapshot.forEach(doc=>{
     const msg = doc.data();
@@ -132,16 +174,20 @@ onSnapshot(q, snapshot=>{
     const div = document.createElement("div");
     div.classList.add("mensagem");
 
-    if(usuarioAtual && msg.uid === usuarioAtual.uid){
+    if(usuario && msg.uid === usuario.uid){
       div.classList.add("minha");
-    } else {
+    }else{
       div.classList.add("outro");
     }
 
+    const hora = msg.data ? 
+      new Date(msg.data.seconds * 1000).toLocaleTimeString() :
+      "";
+
     div.innerHTML = `
-      <strong>${msg.nome}</strong><br>
-      ${msg.texto}<br>
-      <small>${new Date(msg.data.seconds*1000).toLocaleTimeString()}</small>
+      <div class="nome">${msg.nome}</div>
+      <div>${msg.texto}</div>
+      <div class="hora">${hora}</div>
     `;
 
     chatBox.appendChild(div);
@@ -150,20 +196,27 @@ onSnapshot(q, snapshot=>{
   chatBox.scrollTop = chatBox.scrollHeight;
 });
 
+// 🚀 ENVIAR MENSAGEM
 window.enviar = async function(){
 
   const texto = document.getElementById("mensagem").value.trim();
 
-  if(!texto) return;
+  if(!texto || !usuario) return;
 
   await addDoc(collection(db,"chatGlobal"),{
     texto:texto,
-    nome:usuarioAtual.email,
-    uid:usuarioAtual.uid,
-    data:new Date()
+    nome:usuario.email,
+    uid:usuario.uid,
+    data:serverTimestamp()
   });
 
   document.getElementById("mensagem").value="";
+};
+
+// 🚪 LOGOUT
+window.logout = function(){
+  signOut(auth);
+  window.location.href="loginPlayer.html";
 };
 
 </script>
