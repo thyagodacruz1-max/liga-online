@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Pagamento VIP - Liga Online</title>
+
+<style>
+body{
+  background:#0f0f0f;
+  color:white;
+  text-align:center;
+  font-family:Arial;
+}
+
+.card{
+  background:#1c1c1c;
+  width:350px;
+  margin:50px auto;
+  padding:30px;
+  border-radius:12px;
+  border:2px solid gold;
+}
+
+button{
+  padding:10px 20px;
+  background:gold;
+  border:none;
+  border-radius:8px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+#qrcode{
+  margin-top:20px;
+}
+</style>
+</head>
+<body>
+
+<h1>💎 Plano VIP - R$ 25,00</h1>
+
+<div class="card">
+
+  <p>🪙 +5 moedas por vitória</p>
+  <p>🏆 Acesso à Copa VIP</p>
+  <p>💰 Premiação R$ 250,00</p>
+
+  <br>
+
+  <input type="text" id="nome" placeholder="Nome do jogador"><br><br>
+
+  <button onclick="gerarPix()">Gerar PIX</button>
+
+  <div id="qrcode"></div>
+
+</div>
+
+<script>
+
+async function gerarPix(){
+
+  const nome = document.getElementById("nome").value;
+
+  if(!nome){
+    alert("Digite seu nome.");
+    return;
+  }
+
+  // ⚠️ Essa URL será seu backend depois
+  const response = await fetch("https://SEU-BACKEND.vercel.app/api/criarPix",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json"
+    },
+    body: JSON.stringify({ nome })
+  });
+
+  const data = await response.json();
+
+  document.getElementById("qrcode").innerHTML = `
+    <p>Escaneie o QR Code:</p>
+    <img src="${data.qr_code}" width="200">
+    <p>Status: aguardando pagamento...</p>
+  `;
+}
+
+</script>
+
+</body>
+</html>
